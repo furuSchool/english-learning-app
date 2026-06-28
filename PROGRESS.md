@@ -3,7 +3,8 @@
 ## 概要
 英語学習アプリ「SpeakFlow」の実装完了状況。
 
-**GitHub:** https://github.com/furuSchool/english-learning-app
+**GitHub:** https://github.com/furuSchool/english-learning-app  
+**本番URL:** https://app-nine-dusky-43.vercel.app
 
 ---
 
@@ -11,38 +12,55 @@
 
 | 項目 | 状態 |
 |---|---|
-| `npm ci` (フレッシュcloneから) | ✅ 成功 |
 | `npm run build` | ✅ 成功（compile mode） |
-| `npm run dev` | ✅ 成功（HTTP 200） |
-| TypeScript型チェック (`tsc --noEmit`) | ✅ エラーなし |
-| ランディングページ（`/`） | ✅ 200 OK |
-| 認証保護ルート（`/dashboard`, `/stock`） | ✅ 307リダイレクト（未ログイン時） |
-| Gemini API フィードバック（`/api/feedback`） | ✅ 動作確認済み |
-| Supabase 接続 | ⚠️ スキーマ未適用（下記手順を参照） |
+| Vercel本番デプロイ | ✅ 完了 |
+| Google OAuth (Supabase) | ✅ 動作確認済み |
+| アクセス制限 (`ALLOWED_EMAILS`) | ✅ furufuru429@gmail.com のみ |
+| TypeScript型チェック | ✅ エラーなし |
 
 ---
 
-## 実装完了機能
+## 実装済み機能
 
-### タスクエンジン（全8種類）
-| タスクタイプ | カテゴリ | 説明 |
-|---|---|---|
-| Rapid-Fire Q&A | ウォーミングアップ | 3〜5問の即答スピーキング |
-| Taboo Paraphrase | ウォーミングアップ | NGワードなしで英単語を説明 |
-| TED Listening | インプット | YouTube動画視聴 + 3文要約 |
-| News Headline | インプット | 見出し3つから1つ選んでリアクション |
-| Visual Impression | アウトプット | 画像を見て感想を英語で語る |
-| Situation Survival | アウトプット | 日常シチュエーションへの英語対応 |
-| Emotion Sharing | アウトプット | テーマに沿って感情・意見を語る |
-| Pattern Practice | アウトプット | 直訳しにくい日本語表現を英語で |
+### タスクエンジン（17種類）
 
-### その他機能
-- **Web Speech API** — リアルタイム音声認識（非対応ブラウザはテキスト入力フォールバック）
-- **Gemini 2.5 Flash フィードバック** — インライン添削・エラー解説・ネイティブ表現提案
-- **表現ストック** — フィードバック内容を自動保存、`/stock` ページで閲覧・削除
-- **アクティビティヒートマップ** — GitHub風の草生やし（20週分）
-- **タスク即時切り替え** — 予備タスク8件をキャッシュ、通信ゼロで変更
-- **Google OAuth** — Supabase Auth 経由
+| # | タイプ | カテゴリ | モード | 説明 |
+|---|---|---|---|---|
+| 1 | Rapid-Fire Q&A | Warmup | 🎤 | 5問の即答Q&A |
+| 2 | Shadowing Drill | Warmup | 🎤 | ネイティブのセリフを音読→自分の言葉でパラフレーズ |
+| 3 | Video Listening | Input | 🎤 | YouTube動画（TED/tech talks等）視聴→意見 |
+| 4 | Tech News React | Input | 🎤 | HackerNews最新記事をGeminiが要約→英語で意見 |
+| 5 | Podcast Listening | Input | 🎤 | BBC Global News Podcast（生音声）→質問に回答 |
+| 6 | Quote Reaction | Input | 🎤/✍️ | 著名人の引用→同意/反対の理由を述べる |
+| 7 | AI Conversation | Interactive | 🎤/✍️ | LLMがキャラクターを演じ自然な会話（3往復以上） |
+| 8 | Devil's Advocate | Interactive | 🎤/✍️ | 何を言っても反論されるディベート練習 |
+| 9 | Information Gap | Interactive | ✍️ | LLMが秘密の情報を持ち、質問で解明する |
+| 10 | News Discussion | Interactive | 🎤/✍️ | HackerNewsの記事についてLLMと議論 |
+| 11 | Phrase Activation | Expression | 🎤/✍️ | 日本人が使わない頻出フレーズを自分の文で使う |
+| 12 | Collocation Builder | Expression | ✍️ | 動詞+名詞の自然な組み合わせ練習 |
+| 13 | Natural Expression | Expression | 🎤/✍️ | 直訳すると不自然な日本語→自然な英語へ |
+| 14 | Discourse Marker Drill | Expression | 🎤 | "That said" 等の接続表現を使いながら60秒話す |
+| 15 | Social Formula | Expression | 🎤/✍️ | 丁寧な割り込み・反論の和らげ方等の実用フレーズ |
+| 16 | Impromptu Speak | Output | 🎤 | ランダムトピックで60〜90秒止まらず話す |
+| 17 | Situation Survival | Output | 🎤/✍️ | 日常シチュエーションを英語で乗り切るLLM対話 |
+
+### セッションフロー
+- `/dashboard` = ホーム画面（統計・ヒートマップ・タスク残数・生成ボタン）
+- `/session` = アクティブセッション（5タスク順番に実施）
+  - 構成: Warmup × 1 + Input × 1 + Interactive × 2 + Expression/Output × 1
+
+### タスク自動生成
+- ダッシュボードの「タスクを生成する」ボタンを押すとGeminiが42問を一括生成
+- 14種類 × 3問のセットをSupabaseに保存
+- プロンプトはユーザープロファイル（東大院生、コミュニケーション重視、多様なトピック）を考慮
+
+### ライブコンテンツ
+- **Tech News React / News Discussion**: HackerNews API → Jina reader でテキスト取得 → Gemini が3段落に要約
+- **Podcast Listening**: BBC Global News Podcast RSS から最新エポックのmp3 URLを取得 → `<audio>` タグで再生
+
+### Learned Phrases（改訂）
+- 添削不要。有用なフレーズ・表現のみ保存
+- コンパクトカード一覧。クリックで日本語メモ展開。タスク別グルーピング
 
 ---
 
@@ -60,58 +78,43 @@ npm ci
 cp .env.local.example .env.local
 ```
 
-`.env.local` を編集して以下を設定：
-
 | 変数名 | 取得先 |
 |---|---|
-| `NEXT_PUBLIC_SUPABASE_URL` | Supabase > Project Settings > API > Project URL |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase > Project Settings > API > anon public |
-| `SUPABASE_SERVICE_ROLE_KEY` | Supabase > Project Settings > API > service_role |
+| `NEXT_PUBLIC_SUPABASE_URL` | Supabase > Project Settings > API |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase > Project Settings > API |
+| `SUPABASE_SERVICE_ROLE_KEY` | Supabase > Project Settings > API |
 | `GEMINI_API_KEY` | https://aistudio.google.com/apikey |
-| `UNSPLASH_ACCESS_KEY` | https://unsplash.com/developers（任意） |
+| `ALLOWED_EMAILS` | アクセスを許可するGmailアドレス（カンマ区切り） |
 
-> **注意:** `NEXT_PUBLIC_SUPABASE_URL` は `/rest/v1/` を除いたベースURLのみ設定してください。  
-> 例: `https://xxxxxx.supabase.co`
+### 3. Supabase スキーマ適用
+`supabase/migration.sql` を Supabase SQL Editor で実行（既存テーブルをdropして再作成）
 
-### 3. Supabase のスキーマ適用
-1. [Supabase ダッシュボード](https://supabase.com/dashboard) を開く
-2. 対象プロジェクトの **SQL Editor** に移動
-3. `supabase/schema.sql` の内容をコピーして実行（テーブル作成 + シードデータ）
-4. `supabase/functions.sql` の内容をコピーして実行（RPC関数）
-5. **Authentication > Providers > Google** を有効化
-6. **Authentication > URL Configuration > Redirect URLs** に `http://localhost:3000/auth/callback` を追加
+### 4. Supabase 認証設定
+- **Authentication > Providers > Google** を有効化（Google Cloud ConsoleでOAuthクライアントを作成）
+- **Authentication > URL Configuration** に本番URLを追加:
+  - Site URL: `https://app-nine-dusky-43.vercel.app`
+  - Redirect URL: `https://app-nine-dusky-43.vercel.app/auth/callback`
 
-### 4. ローカル開発
-```bash
-npm run dev
-# http://localhost:3000
-```
+### 5. Vercel 環境変数
+Vercel Dashboard > Settings > Environment Variables に上記5つを設定
 
-### 5. ビルド
-```bash
-npm run build   # 成功（全ルートSSR、compile mode）
-npm run start
-```
+### 6. タスク生成（初回）
+ログイン後、ダッシュボードの「タスクを生成する」ボタンを押す（30秒ほどかかる）
 
 ---
 
 ## ビルドに関する技術的注意
 
 ### Next.js 16 + Node.js 26 の互換性問題
-**症状:** `next build`（デフォルト）の `generate` フェーズで以下のエラーが発生：
-```
-Error occurred prerendering page "/_global-error"
-TypeError: Cannot read properties of null (reading 'useContext')
-```
-
-**原因:** Next.js 16.2.9 が静的生成（prerender）しようとする内部ページ（`/_global-error`, `/_not-found`）において、React context が null になる。Node.js 26 との互換性問題。フレッシュな `create-next-app` プロジェクトでも同様に失敗することを確認。
-
-**解決策:** `package.json` の `build` スクリプトを以下に変更済み：
+**回避策:** `package.json` の build スクリプト:
 ```json
 "build": "next build --experimental-build-mode compile"
 ```
+全ルートがSSRとして動作。静的HTMLは生成されないが機能は正常。
 
-**影響:** 全ルートがSSR（サーバーサイドレンダリング）として動作。静的HTMLは生成されないが、アプリの全機能は正常に動作する。
+### Next.js 16 breaking change
+- `middleware.ts` → `proxy.ts`（ファイル名変更）
+- `export function middleware` → `export function proxy`（関数名変更）
 
 ---
 
@@ -120,9 +123,14 @@ TypeError: Cannot read properties of null (reading 'useContext')
 | パス | 説明 | 保護 |
 |---|---|---|
 | `/` | ログインページ（Google OAuth） | 公開 |
-| `/dashboard` | メインページ（今日のタスク3種 + ヒートマップ） | 要認証 |
-| `/stock` | 学んだ表現ストック一覧 | 要認証 |
-| `/api/feedback` | Gemini AIによる添削（POST） | - |
+| `/dashboard` | ホーム（統計・ヒートマップ・タスク生成） | 要認証 |
+| `/session` | アクティブセッション（5タスク） | 要認証 |
+| `/stock` | 保存フレーズ一覧 | 要認証 |
+| `/api/generate-tasks` | Geminiでタスク一括生成（POST） | - |
+| `/api/chat` | インタラクティブLLM対話（POST） | - |
+| `/api/fetch-news` | HackerNews記事取得+要約（GET） | - |
+| `/api/fetch-podcast` | BBC Podcast RSS取得（GET） | - |
+| `/api/save-phrase` | フレーズ保存（POST） | - |
 | `/api/complete-task` | タスク完了記録（POST） | - |
 | `/auth/callback` | Google OAuthコールバック | 公開 |
 
@@ -130,13 +138,7 @@ TypeError: Cannot read properties of null (reading 'useContext')
 
 | テーブル | 用途 |
 |---|---|
-| `tasks` | タスクプール（マスターデータ36件 + バッチ生成用） |
-| `task_completions` | タスク完了ログ（ユーザーごとRLS） |
-| `learned_expressions` | 学んだ表現ストック（ユーザーごとRLS） |
-| `activity_logs` | ヒートマップ用アクティビティログ（ユーザーごとRLS） |
-
-## 今後の拡張候補
-- バッチタスク生成（News API → Supabase への自動蓄積）
-- Whisper API による高精度音声認識
-- ストリーミングフィードバック
-- 学習統計ページ
+| `tasks` | タスクプール（Gemini生成、17種類） |
+| `task_completions` | タスク完了ログ |
+| `learned_expressions` | 保存フレーズ（phrase + meaning_ja のみ） |
+| `activity_logs` | ヒートマップ用アクティビティログ |
