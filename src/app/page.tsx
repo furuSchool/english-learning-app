@@ -1,12 +1,20 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import { Mic, BookOpen, TrendingUp } from 'lucide-react'
+import { Mic } from 'lucide-react'
 
 export default function LandingPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const searchParams = useSearchParams()
+
+  useEffect(() => {
+    if (searchParams.get('error') === 'unauthorized') {
+      setError('このアカウントはアクセスが許可されていません。')
+    }
+  }, [searchParams])
 
   const handleLogin = async () => {
     setLoading(true)
