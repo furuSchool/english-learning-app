@@ -1,79 +1,55 @@
 'use client'
 
 import { useState } from 'react'
-import { SituationSurvivalContent, Feedback } from '@/types'
-import VoiceRecorder from '@/components/ui/VoiceRecorder'
-import FeedbackPanel from '@/components/ui/FeedbackPanel'
-import { AlertCircle } from 'lucide-react'
+import { SituationSurvivalContent, ChatMessage } from '@/types'
+import ChatInterface from '@/components/ui/ChatInterface'
 
 interface Props {
-  content: SituationSurvivalContent
   taskId: string
-  onComplete: (transcript: string, feedback: Feedback | null) => void
+  content: SituationSurvivalContent
+  onComplete: (transcript: string) => void
 }
 
-export default function SituationSurvival({ content, taskId, onComplete }: Props) {
-  const [transcript, setTranscript] = useState('')
-  const [feedback, setFeedback] = useState<Feedback | null>(null)
-  const [loading, setLoading] = useState(false)
+export default function SituationSurvival({ content, onComplete }: Props) {
+  const [started, setStarted] = useState(false)
 
-  const handleTranscript = async (text: string) => {
-    setTranscript(text)
-    setLoading(true)
-    try {
-      const res = await fetch('/api/feedback', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          transcript: text,
-          taskContext: `Situation Survival: The user is responding to this situation in English: "${content.scenario_en}"`,
-          taskType: 'situation_survival',
-        }),
-      })
-      const fb = await res.json()
-      setFeedback(fb)
-    } catch {
-      setFeedback(null)
-    } finally {
-      setLoading(false)
-    }
+  const handleComplete = (messages: ChatMessage[]) => {
+    const log = messages.map(m => `[${m.role === 'user' ? 'You' : 'Other person'}] ${m.content}`).join('\n')
+    onComplete(log)
   }
 
   return (
     <div className="space-y-5">
-      <div className="rounded-xl bg-amber-50 border-2 border-amber-200 p-5">
-        <div className="flex items-start gap-3">
-          <AlertCircle className="w-5 h-5 text-amber-500 mt-0.5 flex-shrink-0" />
-          <div>
-            <p className="text-xs font-semibold text-amber-600 mb-1">シチュエーション</p>
-            <p className="text-gray-800 text-sm leading-relaxed">{content.situation}</p>
-          </div>
-        </div>
+      <div className="text-xs text-gray-500 bg-gray-50 rounded-lg px-3 py-2">
+        🎤/✍️ Output — この状況を英語で乗り切ってください（2往復以上）
       </div>
 
-      <p className="text-sm text-gray-600">
-        このシチュエーションで英語でどう対応するか、即興で話してみましょう！
-      </p>
+      <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 space-y-2">
+        <p className="text-xs text-amber-700 font-semibold">{content.scenario_en}</p>
+        <p className="text-sm text-gray-800 leading-relaxed">{content.situation}</p>
+        {content.context && <p className="text-xs text-gray-500">{content.context}</p>}
+      </div>
 
-      <VoiceRecorder
-        onTranscript={handleTranscript}
-        disabled={loading}
-      />
-
-      {loading && (
-        <p className="text-sm text-gray-500 animate-pulse">添削中...</p>
-      )}
-
-      {feedback && transcript && (
-        <>
-          <FeedbackPanel feedback={feedback} originalText={transcript} />
-          <button
-            onClick={() => onComplete(transcript, feedback)}
-            className="w-full py-3 bg-indigo-600 text-white rounded-xl font-medium hover:bg-indigo-700 transition-colors"
-          >
-            完了 ✓
-          </button>
-        </>
+      {!started ? (
+        <button
+          onClick={() => setStarted(true)}
+          className="w-full py-3 bg-indigo-600 text-white rounded-xl font-medium hover:bg-indigo-700 transition-colors"
+        >
+          シナリオ開始 →
+        </button>
+      ) : (
+        <ChatInterface
+          taskType="ai_conversation"
+          taskContent={{
+            character: 'Person in the scenario',
+            character_description: content.scenario_en,
+            opening_line: content.opening_line,
+            topic_hint: content.situation,
+          }}
+          initialMessage={content.opening_line}
+          minExchanges={2}
+          onComplete={handleComplete}
+        />
       )}
     </div>
   )

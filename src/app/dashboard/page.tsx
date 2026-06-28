@@ -1,86 +1,36 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Task, DailyTaskSet, Feedback } from '@/types'
-import { fetchDailyTasks, getCategoryLabel, getCategoryColor } from '@/lib/tasks'
 import { getActivityLogs } from '@/lib/activity'
-import TaskShell from '@/components/tasks/TaskShell'
-import TaskRunner from '@/components/tasks/TaskRunner'
+import { getTaskCount } from '@/lib/tasks'
 import ActivityHeatmap from '@/components/ui/ActivityHeatmap'
 import { createClient } from '@/lib/supabase/client'
-import { BookMarked, LogOut, RefreshCw } from 'lucide-react'
+import { BookMarked, LogOut, Play, RefreshCw, Zap } from 'lucide-react'
 import Link from 'next/link'
 
-interface CompletedTask {
-  taskId: string
-  transcript: string
-  feedback: Feedback | null
-}
-
 export default function DashboardPage() {
-  const [taskSet, setTaskSet] = useState<DailyTaskSet | null>(null)
-  const [spareIndex, setSpareIndex] = useState(0)
-  const [currentTasks, setCurrentTasks] = useState<{ warmup: Task; input: Task; output: Task } | null>(null)
-  const [completed, setCompleted] = useState<Map<string, CompletedTask>>(new Map())
+  const [taskCount, setTaskCount] = useState<number | null>(null)
   const [activityData, setActivityData] = useState<{ date: string; task_count: number }[]>([])
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const [user, setUser] = useState<{ email?: string } | null>(null)
+  const [generating, setGenerating] = useState(false)
+  const [generateMsg, setGenerateMsg] = useState<string | null>(null)
 
   useEffect(() => {
-    loadDashboard()
+    loadData()
   }, [])
 
-  async function loadDashboard() {
+  async function loadData() {
+    setLoading(true)
     try {
-      const supabase = createClient()
-      const { data: { user } } = await supabase.auth.getUser()
-      setUser(user)
-
-      const [tasks, activity] = await Promise.all([
-        fetchDailyTasks(),
+      const [count, activity] = await Promise.all([
+        getTaskCount(),
         getActivityLogs(365),
       ])
-
-      setTaskSet(tasks)
-      setCurrentTasks({ warmup: tasks.warmup, input: tasks.input, output: tasks.output })
+      setTaskCount(count)
       setActivityData(activity)
-    } catch (e) {
-      setError('データの読み込みに失敗しました。Supabaseの設定を確認してください。')
     } finally {
       setLoading(false)
     }
-  }
-
-  const handleSwap = (category: 'warmup' | 'input' | 'output') => {
-    if (!taskSet || !currentTasks) return
-    const spare = taskSet.spares[spareIndex]
-    if (!spare) return
-
-    setCurrentTasks(prev => prev ? { ...prev, [category]: spare } : null)
-    setSpareIndex(i => i + 1)
-  }
-
-  const handleComplete = async (category: 'warmup' | 'input' | 'output', task: Task, transcript: string, feedback: Feedback | null) => {
-    const completedEntry: CompletedTask = { taskId: task.id, transcript, feedback }
-    setCompleted(prev => new Map(prev).set(task.id, completedEntry))
-
-    // Record completion in backend
-    try {
-      await fetch('/api/complete-task', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          taskId: task.id,
-          taskType: task.type,
-          transcript,
-          feedback,
-        }),
-      })
-      // Refresh activity data
-      const activity = await getActivityLogs(365)
-      setActivityData(activity)
-    } catch {}
   }
 
   const handleLogout = async () => {
@@ -89,125 +39,137 @@ export default function DashboardPage() {
     window.location.href = '/'
   }
 
-  const completedCount = completed.size
-  const allDone = completedCount >= 3
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center space-y-3">
-          <div className="w-8 h-8 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto" />
-          <p className="text-gray-500 text-sm">タスクを準備中...</p>
-        </div>
-      </div>
-    )
+  const handleGenerate = async () => {
+    setGenerating(true)
+    setGenerateMsg(null)
+    try {
+      const res = await fetch('/api/generate-tasks', { method: 'POST' })
+      const data = await res.json()
+      if (data.error) throw new Error(data.error)
+      setGenerateMsg(`✓ ${data.added}件のタスクを追加しました`)
+      await loadData()
+    } catch (e) {
+      setGenerateMsg(`エラー: ${e instanceof Error ? e.message : '生成に失敗しました'}`)
+    } finally {
+      setGenerating(false)
+    }
   }
 
-  if (error) {
-    return (
-      <div className="min-h-screen flex items-center justify-center p-4">
-        <div className="text-center space-y-4 max-w-md">
-          <p className="text-red-600 font-medium">エラーが発生しました</p>
-          <p className="text-gray-500 text-sm">{error}</p>
-          <p className="text-xs text-gray-400">
-            .env.localにSUPABASEとGEMINIのAPIキーを設定してください。
-          </p>
-          <button onClick={loadDashboard} className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm">
-            再試行
-          </button>
-        </div>
-      </div>
-    )
-  }
-
-  if (!currentTasks) return null
-
-  const taskCategories: Array<{ key: 'warmup' | 'input' | 'output'; task: Task }> = [
-    { key: 'warmup', task: currentTasks.warmup },
-    { key: 'input', task: currentTasks.input },
-    { key: 'output', task: currentTasks.output },
-  ]
+  const totalSessions = activityData.reduce((s, d) => s + Math.floor(d.task_count / 5), 0)
+  const streak = (() => {
+    if (!activityData.length) return 0
+    const dates = new Set(activityData.map(d => d.date))
+    let s = 0
+    const d = new Date()
+    while (dates.has(d.toISOString().split('T')[0])) {
+      s++
+      d.setDate(d.getDate() - 1)
+    }
+    return s
+  })()
 
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <header className="bg-white border-b border-gray-100 sticky top-0 z-10">
         <div className="max-w-2xl mx-auto px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className="text-lg font-bold text-indigo-700">SpeakFlow</span>
-            <span className="text-xs bg-indigo-50 text-indigo-600 px-2 py-0.5 rounded-full font-medium">
-              今日のタスク
-            </span>
-          </div>
+          <span className="text-lg font-bold text-indigo-700">SpeakFlow</span>
           <div className="flex items-center gap-3">
-            <Link
-              href="/stock"
-              className="flex items-center gap-1.5 text-sm text-gray-600 hover:text-indigo-600"
-            >
+            <Link href="/stock" className="flex items-center gap-1.5 text-sm text-gray-600 hover:text-indigo-600">
               <BookMarked className="w-4 h-4" />
-              表現ストック
+              <span className="hidden sm:inline">Phrases</span>
             </Link>
-            <button
-              onClick={handleLogout}
-              className="text-gray-400 hover:text-gray-600"
-            >
+            <button onClick={handleLogout} className="text-gray-400 hover:text-gray-600">
               <LogOut className="w-4 h-4" />
             </button>
           </div>
         </div>
       </header>
 
-      <main className="max-w-2xl mx-auto px-4 py-6 space-y-6">
-        {/* Progress */}
-        <div className="bg-white rounded-2xl border border-gray-100 p-4">
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-sm font-semibold text-gray-700">
-              今日の進捗 {completedCount}/3
-            </span>
-            {allDone && (
-              <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded-full">
-                🎉 今日のセッション完了！
-              </span>
-            )}
+      <main className="max-w-2xl mx-auto px-4 py-8 space-y-6">
+        {/* Stats */}
+        <div className="grid grid-cols-3 gap-3">
+          <div className="bg-white rounded-2xl border border-gray-100 p-4 text-center">
+            <p className="text-2xl font-bold text-indigo-600">{streak}</p>
+            <p className="text-xs text-gray-500 mt-0.5">日連続</p>
           </div>
-          <div className="flex gap-2">
-            {taskCategories.map(({ key, task }) => (
-              <div
-                key={key}
-                className={`flex-1 h-2 rounded-full ${
-                  completed.has(task.id) ? 'bg-emerald-500' : 'bg-gray-200'
-                }`}
-              />
-            ))}
+          <div className="bg-white rounded-2xl border border-gray-100 p-4 text-center">
+            <p className="text-2xl font-bold text-indigo-600">{totalSessions}</p>
+            <p className="text-xs text-gray-500 mt-0.5">セッション</p>
+          </div>
+          <div className="bg-white rounded-2xl border border-gray-100 p-4 text-center">
+            <p className={`text-2xl font-bold ${taskCount !== null && taskCount < 20 ? 'text-amber-500' : 'text-indigo-600'}`}>
+              {taskCount ?? '—'}
+            </p>
+            <p className="text-xs text-gray-500 mt-0.5">残タスク</p>
           </div>
         </div>
 
-        {/* Tasks */}
-        {taskCategories.map(({ key, task }) => (
-          <TaskShell
-            key={`${key}-${task.id}`}
-            task={task}
-            onSwap={() => handleSwap(key)}
-            canSwap={spareIndex < (taskSet?.spares.length ?? 0)}
-            isCompleted={completed.has(task.id)}
-          >
-            {!completed.has(task.id) ? (
-              <TaskRunner
-                task={task}
-                onComplete={(transcript, feedback) => handleComplete(key, task, transcript, feedback)}
-              />
-            ) : (
-              <div className="text-center py-3 text-emerald-600 font-medium text-sm">
-                このタスクは完了しました ✓
-              </div>
-            )}
-          </TaskShell>
-        ))}
+        {/* Start session CTA */}
+        <Link href="/session"
+          className="flex items-center justify-between bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl px-6 py-5 transition-colors group">
+          <div>
+            <p className="font-bold text-lg">今日のセッションを始める</p>
+            <p className="text-indigo-200 text-sm mt-0.5">5タスク · 約15分</p>
+          </div>
+          <Play className="w-8 h-8 text-indigo-200 group-hover:text-white transition-colors" />
+        </Link>
 
-        {/* Activity Heatmap */}
+        {/* Task count warning */}
+        {taskCount !== null && taskCount < 20 && (
+          <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
+            <p className="text-sm text-amber-800 font-medium">
+              タスクが残り{taskCount}件です。Geminiで新しいタスクを生成してください。
+            </p>
+          </div>
+        )}
+
+        {/* Generate tasks */}
+        <div className="bg-white rounded-2xl border border-gray-100 p-5">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <Zap className="w-4 h-4 text-indigo-600" />
+              <h2 className="font-semibold text-gray-800">タスクを補充する</h2>
+            </div>
+            <span className="text-xs text-gray-400">Gemini AI が生成</span>
+          </div>
+          <p className="text-sm text-gray-500 mb-4">
+            14種類のタスクタイプについて各3問（計42問）をGeminiが自動生成します。
+          </p>
+          <button
+            onClick={handleGenerate}
+            disabled={generating}
+            className="w-full flex items-center justify-center gap-2 py-3 bg-indigo-50 text-indigo-700 border border-indigo-200 rounded-xl font-medium hover:bg-indigo-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            {generating ? (
+              <>
+                <RefreshCw className="w-4 h-4 animate-spin" />
+                生成中... (30秒ほどかかります)
+              </>
+            ) : (
+              <>
+                <RefreshCw className="w-4 h-4" />
+                タスクを生成する
+              </>
+            )}
+          </button>
+          {generateMsg && (
+            <p className={`text-sm mt-3 text-center ${generateMsg.startsWith('エラー') ? 'text-red-500' : 'text-emerald-600'}`}>
+              {generateMsg}
+            </p>
+          )}
+        </div>
+
+        {/* Heatmap */}
         <div className="bg-white rounded-2xl border border-gray-100 p-5">
           <h2 className="text-sm font-semibold text-gray-700 mb-4">学習履歴</h2>
-          <ActivityHeatmap data={activityData} />
+          {loading ? (
+            <div className="h-24 flex items-center justify-center">
+              <div className="w-5 h-5 border-2 border-indigo-400 border-t-transparent rounded-full animate-spin" />
+            </div>
+          ) : (
+            <ActivityHeatmap data={activityData} />
+          )}
         </div>
       </main>
     </div>
