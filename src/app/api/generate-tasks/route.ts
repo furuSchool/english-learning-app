@@ -1,7 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { GoogleGenerativeAI } from '@google/generative-ai'
-import { createClient } from '@/lib/supabase/server'
+import { createClient as createServerClient } from '@supabase/supabase-js'
 import { buildGeneratePrompt } from '@/lib/prompts'
+
+// Service role client bypasses RLS — required for admin task insertion
+function createAdminClient() {
+  return createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  )
+}
 
 const CATEGORY_MAP: Record<string, string> = {
   rapid_fire_qa: 'warmup',
@@ -63,7 +71,7 @@ async function generateBatch(
 export async function POST(_request: NextRequest) {
   const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!)
   const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' })
-  const supabase = await createClient()
+  const supabase = createAdminClient()
 
   let totalAdded = 0
   const errors: string[] = []
