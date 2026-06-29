@@ -45,11 +45,14 @@ export default function DashboardPage() {
     try {
       const res = await fetch('/api/generate-tasks', { method: 'POST' })
       const data = await res.json()
-      if (data.error) throw new Error(data.error)
-      setGenerateMsg(`✓ ${data.added}件のタスクを追加しました`)
+      if (!res.ok || data.error) {
+        throw new Error(typeof data.error === 'string' ? data.error : JSON.stringify(data.error))
+      }
+      const warn = data.warnings?.length ? `（一部失敗: ${data.warnings.length}バッチ）` : ''
+      setGenerateMsg(`✓ ${data.added}件のタスクを追加しました${warn}`)
       await loadData()
     } catch (e) {
-      setGenerateMsg(`エラー: ${e instanceof Error ? e.message : '生成に失敗しました'}`)
+      setGenerateMsg(`エラー: ${e instanceof Error ? e.message : String(e)}`)
     } finally {
       setGenerating(false)
     }
