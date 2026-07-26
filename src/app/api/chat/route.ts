@@ -17,13 +17,21 @@ export async function POST(request: NextRequest) {
     }
 
     const systemPrompt = systemPromptFn(taskContent)
+    console.log('\n[DEBUG /api/chat] taskType:', taskType)
+    console.log('[DEBUG /api/chat] systemPrompt:\n' + systemPrompt)
+    console.log('[DEBUG /api/chat] lastMessage:', messages[messages.length - 1]?.content)
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!)
     const model = genAI.getGenerativeModel({
       model: 'gemini-2.5-flash',
       systemInstruction: systemPrompt,
     })
 
-    const history = messages.slice(0, -1).map(m => ({
+    // Gemini requires history to start with 'user'. Skip the initial assistant opening line.
+    const firstUserIdx = messages.findIndex(m => m.role === 'user')
+    const historySlice = firstUserIdx >= 0
+      ? messages.slice(firstUserIdx, -1)
+      : messages.slice(0, -1)
+    const history = historySlice.map(m => ({
       role: m.role === 'user' ? 'user' : 'model',
       parts: [{ text: m.content }],
     }))

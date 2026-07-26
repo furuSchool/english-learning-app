@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { GoogleGenerativeAI } from '@google/generative-ai'
 import { createClient as createServerClient } from '@supabase/supabase-js'
 import { buildGeneratePrompt } from '@/lib/prompts'
+import { CURATED_VIDEOS, pickRandomVideo } from '@/lib/ted-talks'
 
-// Service role client bypasses RLS — required for admin task insertion
 function createAdminClient() {
   return createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -28,13 +28,34 @@ const CATEGORY_MAP: Record<string, string> = {
   situation_survival: 'output',
 }
 
-// Split into batches of 4 types to stay well within Gemini output token limits
+// video_listening is excluded from AI generation — uses curated list only
 const BATCHES = [
-  ['rapid_fire_qa', 'shadowing_drill', 'quote_reaction', 'video_listening'],
+  ['rapid_fire_qa', 'shadowing_drill', 'quote_reaction'],
   ['ai_conversation', 'devils_advocate', 'information_gap'],
   ['phrase_activation', 'collocation_builder', 'natural_expression'],
   ['discourse_marker_drill', 'social_formula', 'impromptu_speak', 'situation_survival'],
 ]
+
+/** Generate 3 video_listening tasks from the curated list — no AI involved */
+function buildVideoTasks() {
+  const usedIds: string[] = []
+  return Array.from({ length: 3 }, () => {
+    const video = pickRandomVideo(usedIds)
+    usedIds.push(video.youtube_id)
+    return {
+      type: 'video_listening',
+      category: 'input',
+      difficulty: 1,
+      content: {
+        youtube_id: video.youtube_id,
+        title: video.title,
+        speaker: video.speaker,
+        channel: video.channel,
+        question: video.question,
+      },
+    }
+  })
+}
 
 function serializeError(e: unknown): string {
   if (e instanceof Error) return e.message
@@ -47,10 +68,11 @@ async function generateBatch(
   types: string[]
 ): Promise<Array<{ type: string; category: string; content: unknown; difficulty: number }>> {
   const prompt = buildGeneratePrompt(types)
+  console.log('\n[DEBUG /api/generate-tasks] types:', types)
+  console.log('[DEBUG /api/generate-tasks] prompt:\n' + prompt)
   const result = await model.generateContent(prompt)
   const text = result.response.text().trim()
 
-  // Strip markdown code fences (Gemini sometimes wraps response)
   const jsonStr = text
     .replace(/^```(?:json)?\s*/m, '')
     .replace(/\s*```$/m, '')
@@ -76,6 +98,18 @@ export async function POST(_request: NextRequest) {
   let totalAdded = 0
   const errors: string[] = []
 
+  // 1. Insert curated video_listening tasks (no AI — guaranteed correct IDs)
+  const videoTasks = buildVideoTasks()
+  const { error: videoInsertError } = await supabase
+    .from('tasks')
+    .insert(videoTasks.map(r => ({ ...r, active: true })))
+  if (videoInsertError) {
+    errors.push(`video_listening insert failed: ${serializeError(videoInsertError)}`)
+  } else {
+    totalAdded += videoTasks.length
+  }
+
+  // 2. Generate all other tasks via Gemini
   for (const batch of BATCHES) {
     try {
       const rows = await generateBatch(model, batch)
@@ -93,7 +127,6 @@ export async function POST(_request: NextRequest) {
       errors.push(`Generation failed for [${batch.join(', ')}]: ${serializeError(e)}`)
     }
 
-    // Small delay between batches to avoid rate limits
     await new Promise(r => setTimeout(r, 1000))
   }
 
@@ -109,3 +142,6 @@ export async function POST(_request: NextRequest) {
     warnings: errors.length > 0 ? errors : undefined,
   })
 }
+
+// Export curated video count for admin info
+export { CURATED_VIDEOS }

@@ -3,6 +3,8 @@
 import { useState } from 'react'
 import { NaturalExpressionContent } from '@/types'
 import VoiceRecorder from '@/components/ui/VoiceRecorder'
+import FeedbackPanel, { FeedbackLoading, FeedbackError } from '@/components/ui/FeedbackPanel'
+import { useFeedback } from '@/lib/useFeedback'
 import { BookMarked } from 'lucide-react'
 
 interface Props {
@@ -14,6 +16,7 @@ interface Props {
 export default function NaturalExpression({ content, onComplete }: Props) {
   const [answer, setAnswer] = useState('')
   const [saved, setSaved] = useState<number | null>(null)
+  const { feedback, loading, error, getFeedback } = useFeedback()
 
   const savePhrase = async (index: number) => {
     if (saved === index) return
@@ -28,6 +31,13 @@ export default function NaturalExpression({ content, onComplete }: Props) {
         task_type: 'natural_expression',
       }),
     }).catch(() => {})
+  }
+
+  const handleSubmit = () => {
+    getFeedback('natural_expression', {
+      japanese_expression: content.japanese,
+      user_answer: answer,
+    })
   }
 
   return (
@@ -58,18 +68,34 @@ export default function NaturalExpression({ content, onComplete }: Props) {
         ))}
       </div>
 
-      <div className="space-y-3">
-        <p className="text-sm text-gray-600">上の表現のどれかを使って、自分の状況・経験を英語で話してみてください。</p>
-        <VoiceRecorder onTranscript={text => setAnswer(text)} />
-      </div>
+      {!feedback && !loading && (
+        <div className="space-y-3">
+          <p className="text-sm text-gray-600">上の表現のどれかを使って、自分の状況・経験を英語で話してみてください。</p>
+          <VoiceRecorder onTranscript={text => setAnswer(text)} />
+          {answer && (
+            <button
+              onClick={handleSubmit}
+              className="w-full py-3 bg-emerald-600 text-white rounded-xl font-medium hover:bg-emerald-700 transition-colors"
+            >
+              添削してもらう →
+            </button>
+          )}
+        </div>
+      )}
 
-      {answer && (
-        <button
-          onClick={() => onComplete(`[${content.japanese}]\n${answer}`)}
-          className="w-full py-3 bg-emerald-600 text-white rounded-xl font-medium hover:bg-emerald-700 transition-colors"
-        >
-          完了 →
-        </button>
+      {loading && <FeedbackLoading />}
+      {error && (
+        <FeedbackError
+          error={error}
+          onSkip={() => onComplete(`[${content.japanese}]\n${answer}`)}
+        />
+      )}
+      {feedback && (
+        <FeedbackPanel
+          feedback={feedback}
+          taskType="natural_expression"
+          onContinue={() => onComplete(`[${content.japanese}]\n${answer}`)}
+        />
       )}
     </div>
   )

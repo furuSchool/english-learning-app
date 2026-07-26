@@ -1,7 +1,11 @@
 'use client'
 
+import { useState } from 'react'
 import { InformationGapContent, ChatMessage } from '@/types'
 import ChatInterface from '@/components/ui/ChatInterface'
+import ConversationLog from '@/components/ui/ConversationLog'
+import FeedbackPanel, { FeedbackLoading, FeedbackError } from '@/components/ui/FeedbackPanel'
+import { useFeedback } from '@/lib/useFeedback'
 
 interface Props {
   taskId: string
@@ -10,9 +14,17 @@ interface Props {
 }
 
 export default function InformationGap({ content, onComplete }: Props) {
-  const handleComplete = (messages: ChatMessage[]) => {
-    const log = messages.map(m => `[${m.role === 'user' ? 'You' : 'AI'}] ${m.content}`).join('\n')
-    onComplete(log)
+  const [chatDone, setChatDone] = useState(false)
+  const [messages, setMessages] = useState<ChatMessage[]>([])
+  const [chatLog, setChatLog] = useState('')
+  const { feedback, loading, error, getFeedback } = useFeedback()
+
+  const handleChatComplete = (msgs: ChatMessage[]) => {
+    const log = msgs.map(m => `[${m.role === 'user' ? 'You' : 'AI'}] ${m.content}`).join('\n')
+    setMessages(msgs)
+    setChatLog(log)
+    setChatDone(true)
+    getFeedback('information_gap', { chat_log: log })
   }
 
   return (
@@ -27,13 +39,29 @@ export default function InformationGap({ content, onComplete }: Props) {
         <p className="text-xs text-blue-600 mt-2">AIが全容を知っています。英語で質問して解明してください。</p>
       </div>
 
-      <ChatInterface
-        taskType="information_gap"
-        taskContent={content as unknown as Record<string, unknown>}
-        initialMessage="I know what's going on. Ask me questions and I'll tell you what I can."
-        minExchanges={4}
-        onComplete={handleComplete}
-      />
+      {!chatDone && (
+        <ChatInterface
+          taskType="information_gap"
+          taskContent={content as unknown as Record<string, unknown>}
+          initialMessage="I know what's going on. Ask me questions and I'll tell you what I can."
+          minExchanges={4}
+          onComplete={handleChatComplete}
+        />
+      )}
+
+      {chatDone && (
+        <ConversationLog messages={messages} />
+      )}
+
+      {chatDone && loading && <FeedbackLoading />}
+      {chatDone && error && <FeedbackError error={error} onSkip={() => onComplete(chatLog)} />}
+      {chatDone && feedback && (
+        <FeedbackPanel
+          feedback={feedback}
+          taskType="information_gap"
+          onContinue={() => onComplete(chatLog)}
+        />
+      )}
     </div>
   )
 }

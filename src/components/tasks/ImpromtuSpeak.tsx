@@ -3,6 +3,8 @@
 import { useState, useEffect, useRef } from 'react'
 import { ImpromtuSpeakContent } from '@/types'
 import VoiceRecorder from '@/components/ui/VoiceRecorder'
+import FeedbackPanel, { FeedbackLoading, FeedbackError } from '@/components/ui/FeedbackPanel'
+import { useFeedback } from '@/lib/useFeedback'
 
 interface Props {
   taskId: string
@@ -15,6 +17,7 @@ export default function ImpromtuSpeak({ content, onComplete }: Props) {
   const [seconds, setSeconds] = useState(0)
   const [answer, setAnswer] = useState('')
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const { feedback, loading, error, getFeedback } = useFeedback()
 
   useEffect(() => {
     if (started) {
@@ -24,6 +27,14 @@ export default function ImpromtuSpeak({ content, onComplete }: Props) {
   }, [started])
 
   const fmt = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
+
+  const handleSubmit = () => {
+    if (timerRef.current) clearInterval(timerRef.current)
+    getFeedback('impromptu_speak', {
+      topic: content.topic,
+      user_answer: answer,
+    })
+  }
 
   return (
     <div className="space-y-5">
@@ -41,7 +52,7 @@ export default function ImpromtuSpeak({ content, onComplete }: Props) {
         <p className="text-sm text-gray-700 italic">"{content.starter_hint}"</p>
       </div>
 
-      {started && (
+      {started && !feedback && !loading && (
         <div className="text-center">
           <span className={`text-3xl font-mono font-bold ${seconds >= 60 ? 'text-emerald-600' : 'text-indigo-600'}`}>
             {fmt(seconds)}
@@ -57,18 +68,28 @@ export default function ImpromtuSpeak({ content, onComplete }: Props) {
         >
           話し始める →
         </button>
-      ) : (
+      ) : !feedback && !loading && (
         <div className="space-y-3">
           <VoiceRecorder onTranscript={text => setAnswer(text)} />
           {answer && (
             <button
-              onClick={() => onComplete(answer)}
+              onClick={handleSubmit}
               className="w-full py-3 bg-emerald-600 text-white rounded-xl font-medium hover:bg-emerald-700 transition-colors"
             >
-              完了 →
+              添削してもらう →
             </button>
           )}
         </div>
+      )}
+
+      {loading && <FeedbackLoading />}
+      {error && <FeedbackError error={error} onSkip={() => onComplete(answer)} />}
+      {feedback && (
+        <FeedbackPanel
+          feedback={feedback}
+          taskType="impromptu_speak"
+          onContinue={() => onComplete(answer)}
+        />
       )}
     </div>
   )

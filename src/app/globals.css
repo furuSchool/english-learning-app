@@ -23,4 +23,15 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+  font-size: 16px;
+  line-height: 1.6;
 }
+
+/* Bump up base text sizes across the app */
+p, li, span, label, textarea, input, button {
+  font-size: inherit;
+}
+
+/* Make Tailwind text-sm closer to readable on desktop */
+.text-sm { font-size: 0.9375rem; } /* 15px instead of 14px */
+.text-xs { font-size: 0.8125rem; } /* 13px instead of 12px */

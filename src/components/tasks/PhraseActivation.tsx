@@ -3,6 +3,8 @@
 import { useState } from 'react'
 import { PhraseActivationContent } from '@/types'
 import VoiceRecorder from '@/components/ui/VoiceRecorder'
+import FeedbackPanel, { FeedbackLoading, FeedbackError } from '@/components/ui/FeedbackPanel'
+import { useFeedback } from '@/lib/useFeedback'
 import { ChevronRight, BookMarked } from 'lucide-react'
 
 interface Props {
@@ -16,6 +18,7 @@ export default function PhraseActivation({ content, onComplete }: Props) {
   const [answers, setAnswers] = useState<string[]>([])
   const [current, setCurrent] = useState('')
   const [saved, setSaved] = useState(false)
+  const { feedback, loading, error, getFeedback, clearFeedback } = useFeedback()
 
   const phrase = content.phrases[index]
   const total = content.phrases.length
@@ -34,8 +37,16 @@ export default function PhraseActivation({ content, onComplete }: Props) {
     }).catch(() => {})
   }
 
-  const next = () => {
+  const handleSubmit = () => {
+    getFeedback('phrase_activation', {
+      phrase: phrase.phrase,
+      user_sentence: current,
+    })
+  }
+
+  const handleNext = () => {
     const all = [...answers, current]
+    clearFeedback()
     if (index + 1 < total) {
       setAnswers(all)
       setCurrent('')
@@ -77,16 +88,34 @@ export default function PhraseActivation({ content, onComplete }: Props) {
         </div>
       </div>
 
-      <p className="text-sm text-gray-600">このフレーズを使って、自分の経験や意見を英語で話してみてください。</p>
+      {!feedback && !loading && (
+        <>
+          <p className="text-sm text-gray-600">このフレーズを使って、自分の経験や意見を英語で話してみてください。</p>
+          <VoiceRecorder onTranscript={text => setCurrent(text)} />
+          {current && (
+            <button onClick={handleSubmit}
+              className="w-full flex items-center justify-center gap-2 py-3 bg-indigo-600 text-white rounded-xl font-medium hover:bg-indigo-700 transition-colors">
+              添削してもらう
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          )}
+        </>
+      )}
 
-      <VoiceRecorder onTranscript={text => setCurrent(text)} />
-
-      {current && (
-        <button onClick={next}
-          className="w-full flex items-center justify-center gap-2 py-3 bg-indigo-600 text-white rounded-xl font-medium hover:bg-indigo-700 transition-colors">
-          {index + 1 < total ? '次のフレーズ' : '完了'}
-          <ChevronRight className="w-4 h-4" />
-        </button>
+      {loading && <FeedbackLoading />}
+      {error && (
+        <FeedbackError
+          error={error}
+          onSkip={handleNext}
+        />
+      )}
+      {feedback && (
+        <FeedbackPanel
+          feedback={feedback}
+          taskType="phrase_activation"
+          onContinue={handleNext}
+          continueLabel={index + 1 < total ? '次のフレーズ →' : '完了 →'}
+        />
       )}
     </div>
   )

@@ -3,6 +3,9 @@
 import { useState } from 'react'
 import { SituationSurvivalContent, ChatMessage } from '@/types'
 import ChatInterface from '@/components/ui/ChatInterface'
+import ConversationLog from '@/components/ui/ConversationLog'
+import FeedbackPanel, { FeedbackLoading, FeedbackError } from '@/components/ui/FeedbackPanel'
+import { useFeedback } from '@/lib/useFeedback'
 
 interface Props {
   taskId: string
@@ -12,10 +15,17 @@ interface Props {
 
 export default function SituationSurvival({ content, onComplete }: Props) {
   const [started, setStarted] = useState(false)
+  const [chatDone, setChatDone] = useState(false)
+  const [messages, setMessages] = useState<ChatMessage[]>([])
+  const [chatLog, setChatLog] = useState('')
+  const { feedback, loading, error, getFeedback } = useFeedback()
 
-  const handleComplete = (messages: ChatMessage[]) => {
-    const log = messages.map(m => `[${m.role === 'user' ? 'You' : 'Other person'}] ${m.content}`).join('\n')
-    onComplete(log)
+  const handleChatComplete = (msgs: ChatMessage[]) => {
+    const log = msgs.map(m => `[${m.role === 'user' ? 'You' : 'Other person'}] ${m.content}`).join('\n')
+    setMessages(msgs)
+    setChatLog(log)
+    setChatDone(true)
+    getFeedback('situation_survival', { situation: content.situation, chat_log: log })
   }
 
   return (
@@ -30,16 +40,18 @@ export default function SituationSurvival({ content, onComplete }: Props) {
         {content.context && <p className="text-xs text-gray-500">{content.context}</p>}
       </div>
 
-      {!started ? (
+      {!started && !chatDone && (
         <button
           onClick={() => setStarted(true)}
           className="w-full py-3 bg-indigo-600 text-white rounded-xl font-medium hover:bg-indigo-700 transition-colors"
         >
           シナリオ開始 →
         </button>
-      ) : (
+      )}
+
+      {started && !chatDone && (
         <ChatInterface
-          taskType="ai_conversation"
+          taskType="situation_survival"
           taskContent={{
             character: 'Person in the scenario',
             character_description: content.scenario_en,
@@ -48,7 +60,24 @@ export default function SituationSurvival({ content, onComplete }: Props) {
           }}
           initialMessage={content.opening_line}
           minExchanges={2}
-          onComplete={handleComplete}
+          onComplete={handleChatComplete}
+        />
+      )}
+
+      {chatDone && (
+        <ConversationLog
+          messages={messages}
+          labels={{ user: 'You', assistant: 'Other person' }}
+        />
+      )}
+
+      {chatDone && loading && <FeedbackLoading />}
+      {chatDone && error && <FeedbackError error={error} onSkip={() => onComplete(chatLog)} />}
+      {chatDone && feedback && (
+        <FeedbackPanel
+          feedback={feedback}
+          taskType="situation_survival"
+          onContinue={() => onComplete(chatLog)}
         />
       )}
     </div>

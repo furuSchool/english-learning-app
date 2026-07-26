@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from 'react'
 import VoiceRecorder from '@/components/ui/VoiceRecorder'
+import FeedbackPanel, { FeedbackLoading, FeedbackError } from '@/components/ui/FeedbackPanel'
+import { useFeedback } from '@/lib/useFeedback'
 import { ExternalLink } from 'lucide-react'
 
 interface Props {
@@ -17,19 +19,20 @@ interface NewsData {
 
 export default function TechNewsReact({ onComplete }: Props) {
   const [news, setNews] = useState<NewsData | null>(null)
-  const [loading, setLoading] = useState(true)
+  const [fetchLoading, setFetchLoading] = useState(true)
   const [read, setRead] = useState(false)
   const [answer, setAnswer] = useState('')
+  const { feedback, loading: fbLoading, error, getFeedback } = useFeedback()
 
   useEffect(() => {
     fetch('/api/fetch-news')
       .then(r => r.json())
       .then(setNews)
       .catch(() => setNews(null))
-      .finally(() => setLoading(false))
+      .finally(() => setFetchLoading(false))
   }, [])
 
-  if (loading) return (
+  if (fetchLoading) return (
     <div className="flex items-center gap-2 text-sm text-gray-500 py-4">
       <div className="w-4 h-4 border-2 border-indigo-400 border-t-transparent rounded-full animate-spin" />
       最新ニュースを取得中...
@@ -39,6 +42,13 @@ export default function TechNewsReact({ onComplete }: Props) {
   if (!news) return (
     <p className="text-sm text-red-500">ニュースの取得に失敗しました。</p>
   )
+
+  const handleSubmit = () => {
+    getFeedback('tech_news_react', {
+      news_summary: news.summary,
+      user_answer: answer,
+    })
+  }
 
   return (
     <div className="space-y-5">
@@ -59,14 +69,16 @@ export default function TechNewsReact({ onComplete }: Props) {
         <p className="text-sm text-gray-700 leading-relaxed">{news.summary}</p>
       </div>
 
-      {!read ? (
+      {!read && (
         <button
           onClick={() => setRead(true)}
           className="w-full py-3 bg-indigo-600 text-white rounded-xl font-medium hover:bg-indigo-700 transition-colors"
         >
           読了 → 意見を話す
         </button>
-      ) : (
+      )}
+
+      {read && !feedback && !fbLoading && (
         <div className="space-y-3">
           <div className="bg-indigo-50 rounded-xl p-4">
             <p className="text-sm text-gray-800">What's the key point of this story? What do you think about it? (60 seconds)</p>
@@ -74,13 +86,23 @@ export default function TechNewsReact({ onComplete }: Props) {
           <VoiceRecorder onTranscript={text => setAnswer(text)} />
           {answer && (
             <button
-              onClick={() => onComplete(answer)}
+              onClick={handleSubmit}
               className="w-full py-3 bg-emerald-600 text-white rounded-xl font-medium hover:bg-emerald-700 transition-colors"
             >
-              完了 →
+              添削してもらう →
             </button>
           )}
         </div>
+      )}
+
+      {fbLoading && <FeedbackLoading />}
+      {error && <FeedbackError error={error} onSkip={() => onComplete(answer)} />}
+      {feedback && (
+        <FeedbackPanel
+          feedback={feedback}
+          taskType="tech_news_react"
+          onContinue={() => onComplete(answer)}
+        />
       )}
     </div>
   )

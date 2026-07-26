@@ -3,6 +3,8 @@
 import { useState } from 'react'
 import { SocialFormulaContent } from '@/types'
 import VoiceRecorder from '@/components/ui/VoiceRecorder'
+import FeedbackPanel, { FeedbackLoading, FeedbackError } from '@/components/ui/FeedbackPanel'
+import { useFeedback } from '@/lib/useFeedback'
 import { BookMarked } from 'lucide-react'
 
 interface Props {
@@ -14,6 +16,7 @@ interface Props {
 export default function SocialFormula({ content, onComplete }: Props) {
   const [answer, setAnswer] = useState('')
   const [saved, setSaved] = useState(false)
+  const { feedback, loading, error, getFeedback } = useFeedback()
 
   const saveAll = async () => {
     if (saved) return
@@ -29,6 +32,14 @@ export default function SocialFormula({ content, onComplete }: Props) {
         }),
       }).catch(() => {})
     }
+  }
+
+  const handleSubmit = () => {
+    getFeedback('social_formula', {
+      formula_focus: content.formula_focus,
+      scenario: content.scenario,
+      user_answer: answer,
+    })
   }
 
   return (
@@ -63,17 +74,29 @@ export default function SocialFormula({ content, onComplete }: Props) {
         <p className="text-sm text-gray-800 leading-relaxed">{content.scenario}</p>
       </div>
 
-      <p className="text-sm text-gray-600">上のフレーズを使って、このシナリオに対応してください。</p>
+      {!feedback && !loading && (
+        <>
+          <p className="text-sm text-gray-600">上のフレーズを使って、このシナリオに対応してください。</p>
+          <VoiceRecorder onTranscript={text => setAnswer(text)} />
+          {answer && (
+            <button
+              onClick={handleSubmit}
+              className="w-full py-3 bg-emerald-600 text-white rounded-xl font-medium hover:bg-emerald-700 transition-colors"
+            >
+              添削してもらう →
+            </button>
+          )}
+        </>
+      )}
 
-      <VoiceRecorder onTranscript={text => setAnswer(text)} />
-
-      {answer && (
-        <button
-          onClick={() => onComplete(answer)}
-          className="w-full py-3 bg-emerald-600 text-white rounded-xl font-medium hover:bg-emerald-700 transition-colors"
-        >
-          完了 →
-        </button>
+      {loading && <FeedbackLoading />}
+      {error && <FeedbackError error={error} onSkip={() => onComplete(answer)} />}
+      {feedback && (
+        <FeedbackPanel
+          feedback={feedback}
+          taskType="social_formula"
+          onContinue={() => onComplete(answer)}
+        />
       )}
     </div>
   )

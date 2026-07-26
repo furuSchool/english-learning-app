@@ -60,6 +60,7 @@ Article text: ${article.text || '(Only title available)'}
 Write the summary in natural, conversational English — not formal. About 150-200 words total.
 Return ONLY the summary text, no headers or markdown.`
 
+    console.log('\n[DEBUG /api/fetch-news] prompt:\n' + prompt)
     const result = await model.generateContent(prompt)
     const summary = result.response.text().trim()
 

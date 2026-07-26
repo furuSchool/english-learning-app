@@ -18,6 +18,18 @@
 | アクセス制限 (`ALLOWED_EMAILS`) | ✅ furufuru429@gmail.com のみ |
 | TypeScript型チェック | ✅ エラーなし |
 
+## 最新バグ修正（2026-07-26）
+
+| バグ | 修正内容 |
+|---|---|
+| 完了タスクがDB削除されない | `/api/complete-task` が `task_completions` へのINSERTのみ行い `tasks` からDELETEしていなかった。サービスロールクライアントで削除するよう修正（`tasks`はSELECTのみRLS許可のため） |
+| Interactiveの添削が文脈無視 | ChatInterfaceの`per_turn_correction`が会話の前後関係を渡さずGeminiに送っていた。直前のAI発言とタスクの設定をプロンプトに含めるよう修正 |
+| セッション構成がInteractive×2固定 | `SessionTaskSet`を要件定義書§2.1準拠の`{warmup, input, interactive, expression, output}`（各1つ）に変更 |
+| タスク生成が全滅していた | `buildGeneratePrompt`内で未定義の`videoSpec`変数を参照しており、呼び出すたびに`ReferenceError`で失敗していた（発見・修正） |
+| Rapid-Fire Q&A 5問→3問 | 生成プロンプトの質問数を変更 |
+| Expression課題を2問以内に | Phrase Activation・Collocation Builderの生成個数を3→2に変更 |
+| プロンプト全文書き出し | `PROMPTS.md`に全プロンプトテンプレートの全文と使用場面を記載（手動編集の参照用。実体は`src/lib/prompts.ts`） |
+
 ---
 
 ## 実装済み機能
@@ -26,7 +38,7 @@
 
 | # | タイプ | カテゴリ | モード | 説明 |
 |---|---|---|---|---|
-| 1 | Rapid-Fire Q&A | Warmup | 🎤 | 5問の即答Q&A |
+| 1 | Rapid-Fire Q&A | Warmup | 🎤 | 3問の即答Q&A |
 | 2 | Shadowing Drill | Warmup | 🎤 | ネイティブのセリフを音読→自分の言葉でパラフレーズ |
 | 3 | Video Listening | Input | 🎤 | YouTube動画（TED/tech talks等）視聴→意見 |
 | 4 | Tech News React | Input | 🎤 | HackerNews最新記事をGeminiが要約→英語で意見 |
@@ -47,7 +59,7 @@
 ### セッションフロー
 - `/dashboard` = ホーム画面（統計・ヒートマップ・タスク残数・生成ボタン）
 - `/session` = アクティブセッション（5タスク順番に実施）
-  - 構成: Warmup × 1 + Input × 1 + Interactive × 2 + Expression/Output × 1
+  - 構成: Warmup × 1 + Input × 1 + Interactive × 1 + Expression × 1 + Output × 1（各カテゴリ1つずつ）
 
 ### タスク自動生成
 - ダッシュボードの「タスクを生成する」ボタンを押すとGeminiが42問を一括生成
@@ -130,6 +142,7 @@ Vercel Dashboard > Settings > Environment Variables に上記5つを設定
 | `/api/chat` | インタラクティブLLM対話（POST） | - |
 | `/api/fetch-news` | HackerNews記事取得+要約（GET） | - |
 | `/api/fetch-podcast` | BBC Podcast RSS取得（GET） | - |
+| `/api/feedback` | 添削フィードバック（POST） | - |
 | `/api/save-phrase` | フレーズ保存（POST） | - |
 | `/api/complete-task` | タスク完了記録（POST） | - |
 | `/auth/callback` | Google OAuthコールバック | 公開 |

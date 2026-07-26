@@ -2,6 +2,8 @@
 
 import { useState } from 'react'
 import { CollocationContent } from '@/types'
+import FeedbackPanel, { FeedbackLoading, FeedbackError } from '@/components/ui/FeedbackPanel'
+import { useFeedback } from '@/lib/useFeedback'
 import { ChevronRight, BookMarked } from 'lucide-react'
 
 interface Props {
@@ -15,6 +17,7 @@ export default function CollocationBuilder({ content, onComplete }: Props) {
   const [answers, setAnswers] = useState<string[]>([])
   const [current, setCurrent] = useState('')
   const [saved, setSaved] = useState(false)
+  const { feedback, loading, error, getFeedback, clearFeedback } = useFeedback()
 
   const col = content.collocations[index]
   const total = content.collocations.length
@@ -33,8 +36,16 @@ export default function CollocationBuilder({ content, onComplete }: Props) {
     }).catch(() => {})
   }
 
-  const next = () => {
+  const handleSubmit = () => {
+    getFeedback('collocation_builder', {
+      target_collocation: col.correct,
+      user_sentence: current,
+    })
+  }
+
+  const handleNext = () => {
     const all = [...answers, current]
+    clearFeedback()
     if (index + 1 < total) {
       setAnswers(all)
       setCurrent('')
@@ -84,23 +95,37 @@ export default function CollocationBuilder({ content, onComplete }: Props) {
         </div>
       </div>
 
-      <div className="space-y-2">
-        <p className="text-sm text-gray-600">"{col.correct}" を使った英文を書いてください（自分の経験・意見）</p>
-        <textarea
-          value={current}
-          onChange={e => setCurrent(e.target.value)}
-          rows={3}
-          placeholder="Write your sentence here..."
-          className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
-        />
-      </div>
+      {!feedback && !loading && (
+        <>
+          <div className="space-y-2">
+            <p className="text-sm text-gray-600">"{col.correct}" を使った英文を書いてください（自分の経験・意見）</p>
+            <textarea
+              value={current}
+              onChange={e => setCurrent(e.target.value)}
+              rows={3}
+              placeholder="Write your sentence here..."
+              className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
+            />
+          </div>
+          {current.trim() && (
+            <button onClick={handleSubmit}
+              className="w-full flex items-center justify-center gap-2 py-3 bg-indigo-600 text-white rounded-xl font-medium hover:bg-indigo-700 transition-colors">
+              添削してもらう
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          )}
+        </>
+      )}
 
-      {current.trim() && (
-        <button onClick={next}
-          className="w-full flex items-center justify-center gap-2 py-3 bg-indigo-600 text-white rounded-xl font-medium hover:bg-indigo-700 transition-colors">
-          {index + 1 < total ? '次へ' : '完了'}
-          <ChevronRight className="w-4 h-4" />
-        </button>
+      {loading && <FeedbackLoading />}
+      {error && <FeedbackError error={error} onSkip={handleNext} />}
+      {feedback && (
+        <FeedbackPanel
+          feedback={feedback}
+          taskType="collocation_builder"
+          onContinue={handleNext}
+          continueLabel={index + 1 < total ? '次へ →' : '完了 →'}
+        />
       )}
     </div>
   )

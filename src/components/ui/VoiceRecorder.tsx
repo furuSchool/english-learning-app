@@ -1,169 +1,170 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import { Mic, MicOff, Square } from 'lucide-react'
+import { Mic, Square, RotateCcw } from 'lucide-react'
 
 interface VoiceRecorderProps {
   onTranscript: (text: string) => void
-  onRecordingChange?: (isRecording: boolean) => void
   disabled?: boolean
+  placeholder?: string
 }
 
-export default function VoiceRecorder({ onTranscript, onRecordingChange, disabled }: VoiceRecorderProps) {
+export default function VoiceRecorder({ onTranscript, disabled, placeholder }: VoiceRecorderProps) {
   const [isRecording, setIsRecording] = useState(false)
-  const [transcript, setTranscript] = useState('')
+  const [text, setText] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [supported, setSupported] = useState(true)
   const recognitionRef = useRef<SpeechRecognition | null>(null)
+  const textRef = useRef('')
+  const isRecordingRef = useRef(false)
+  // Keep onTranscript in a ref so the effect never needs to re-run when it changes
+  const onTranscriptRef = useRef(onTranscript)
+  useEffect(() => { onTranscriptRef.current = onTranscript }, [onTranscript])
 
   useEffect(() => {
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
-    if (!SpeechRecognition) {
-      setSupported(false)
-      return
-    }
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition
+    if (!SR) { setSupported(false); return }
 
-    const recognition = new SpeechRecognition()
-    recognition.continuous = true
-    recognition.interimResults = true
-    recognition.lang = 'en-US'
+    const r = new SR()
+    r.continuous = true
+    r.interimResults = true
+    r.lang = 'en-US'
 
-    recognition.onresult = (event) => {
-      let finalTranscript = ''
-      let interimTranscript = ''
+    r.onresult = (event) => {
+      let final = ''
       for (let i = event.resultIndex; i < event.results.length; i++) {
-        if (event.results[i].isFinal) {
-          finalTranscript += event.results[i][0].transcript
-        } else {
-          interimTranscript += event.results[i][0].transcript
-        }
+        if (event.results[i].isFinal) final += event.results[i][0].transcript
       }
-      setTranscript(prev => {
-        const updated = prev + finalTranscript
-        return updated
-      })
+      if (final) {
+        const updated = textRef.current + final
+        textRef.current = updated
+        setText(updated)
+        onTranscriptRef.current(updated)
+      }
     }
 
-    recognition.onerror = (event) => {
-      if (event.error !== 'no-speech') {
-        setError('音声認識エラー: ' + event.error)
-      }
+    r.onerror = (event) => {
+      if (event.error !== 'no-speech') setError('音声認識エラー: ' + event.error)
       setIsRecording(false)
-      onRecordingChange?.(false)
+      isRecordingRef.current = false
     }
 
-    recognition.onend = () => {
-      if (isRecording) {
-        try { recognition.start() } catch {}
+    r.onend = () => {
+      if (recognitionRef.current && isRecordingRef.current) {
+        try { r.start() } catch {}
       }
     }
 
-    recognitionRef.current = recognition
-
-    return () => {
-      recognition.stop()
-    }
-  }, [])
+    recognitionRef.current = r
+    return () => r.stop()
+  }, []) // no dependency on onTranscript — use ref instead
 
   const startRecording = () => {
-    if (!recognitionRef.current) return
-    setTranscript('')
+    if (!recognitionRef.current || disabled) return
+    textRef.current = text
     setError(null)
+    isRecordingRef.current = true
     setIsRecording(true)
-    onRecordingChange?.(true)
     recognitionRef.current.start()
   }
 
   const stopRecording = () => {
     if (!recognitionRef.current) return
+    isRecordingRef.current = false
     setIsRecording(false)
-    onRecordingChange?.(false)
     recognitionRef.current.stop()
-    setTimeout(() => {
-      if (transcript) onTranscript(transcript)
-    }, 300)
+  }
+
+  const reset = () => {
+    textRef.current = ''
+    setText('')
+    setError(null)
+    setIsRecording(false)
+    isRecordingRef.current = false
+    onTranscriptRef.current('')
+    try { recognitionRef.current?.stop() } catch {}
+  }
+
+  const handleTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const val = e.target.value
+    textRef.current = val
+    setText(val)
+    onTranscriptRef.current(val)
   }
 
   if (!supported) {
     return (
-      <div className="rounded-xl border border-gray-200 p-4">
-        <p className="text-sm text-gray-500 mb-2">
-          お使いのブラウザは音声入力に対応していません。テキストで入力してください。
-        </p>
+      <div className="space-y-3">
+        <p className="text-sm text-gray-500">音声入力非対応ブラウザです。テキストで入力してください。</p>
         <textarea
-          className="w-full rounded-lg border border-gray-300 p-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
           rows={4}
-          placeholder="英語でここに入力してください..."
-          onChange={e => setTranscript(e.target.value)}
+          value={text}
+          onChange={handleTextChange}
+          placeholder={placeholder ?? '英語でここに入力してください...'}
+          className="w-full rounded-xl border border-gray-200 px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
         />
-        <button
-          onClick={() => transcript && onTranscript(transcript)}
-          className="mt-2 px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700"
-        >
-          送信
-        </button>
       </div>
     )
   }
 
   return (
-    <div className="space-y-4">
-      <div className="min-h-[80px] rounded-xl border border-gray-200 bg-gray-50 p-4">
-        {transcript ? (
-          <p className="text-gray-800 text-sm leading-relaxed">{transcript}</p>
-        ) : (
-          <p className="text-gray-400 text-sm">
-            {isRecording ? '話してください...' : 'マイクボタンを押して話し始めてください'}
-          </p>
+    <div className="space-y-3">
+      <div className="relative">
+        <textarea
+          rows={4}
+          value={text}
+          onChange={handleTextChange}
+          readOnly={isRecording}
+          placeholder={
+            isRecording
+              ? '話してください...'
+              : (placeholder ?? 'マイクボタンを押して話し始めるか、ここに直接入力できます')
+          }
+          className={`w-full rounded-xl border px-4 py-3 text-base leading-relaxed focus:outline-none resize-none transition-colors ${
+            isRecording
+              ? 'border-red-300 bg-red-50 text-gray-700 cursor-default'
+              : 'border-gray-200 bg-white focus:ring-2 focus:ring-indigo-500'
+          }`}
+        />
+        {isRecording && (
+          <span className="absolute top-3 right-3 flex items-center gap-1 text-red-500 text-xs font-medium">
+            <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+            REC
+          </span>
         )}
       </div>
 
       {error && <p className="text-red-500 text-sm">{error}</p>}
 
-      <div className="flex gap-3 items-center">
+      <div className="flex items-center gap-3">
         {!isRecording ? (
           <button
             onClick={startRecording}
             disabled={disabled}
-            className="flex items-center gap-2 px-5 py-3 bg-indigo-600 text-white rounded-xl font-medium hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white rounded-xl font-semibold text-base hover:bg-indigo-700 disabled:opacity-40 transition-colors"
           >
-            <Mic className="w-5 h-5" />
-            録音開始
+            <Mic className="w-4 h-4" />
+            {text ? '追加録音' : '録音開始'}
           </button>
         ) : (
           <button
             onClick={stopRecording}
-            className="flex items-center gap-2 px-5 py-3 bg-red-500 text-white rounded-xl font-medium hover:bg-red-600 transition-colors animate-pulse"
+            className="flex items-center gap-2 px-5 py-2.5 bg-red-500 text-white rounded-xl font-semibold text-base hover:bg-red-600 transition-colors"
           >
-            <Square className="w-5 h-5" />
+            <Square className="w-4 h-4" />
             録音停止
           </button>
         )}
 
-        {transcript && !isRecording && (
-          <button
-            onClick={() => onTranscript(transcript)}
-            className="px-5 py-3 bg-emerald-600 text-white rounded-xl font-medium hover:bg-emerald-700 transition-colors"
-          >
-            送信 →
-          </button>
-        )}
-
-        {transcript && (
-          <button
-            onClick={() => setTranscript('')}
-            className="px-3 py-3 text-gray-500 hover:text-gray-700 transition-colors"
-          >
-            クリア
+        {text && !isRecording && (
+          <button onClick={reset} className="p-2.5 text-gray-400 hover:text-gray-600 transition-colors" title="クリア">
+            <RotateCcw className="w-4 h-4" />
           </button>
         )}
       </div>
 
-      {isRecording && (
-        <div className="flex items-center gap-2 text-red-500 text-sm">
-          <span className="inline-block w-2 h-2 rounded-full bg-red-500 animate-pulse" />
-          録音中...
-        </div>
+      {!isRecording && !text && (
+        <p className="text-xs text-gray-400">録音後にテキストを編集できます</p>
       )}
     </div>
   )

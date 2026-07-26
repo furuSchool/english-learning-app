@@ -35,6 +35,7 @@ export interface VideoListeningContent {
   youtube_id: string
   title: string
   channel: string
+  speaker?: string
   question: string
 }
 
@@ -182,9 +183,9 @@ export interface Task {
 export interface SessionTaskSet {
   warmup: Task
   input: Task
-  interactive1: Task
-  interactive2: Task
+  interactive: Task
   expression: Task
+  output: Task
 }
 
 // ── Chat (interactive tasks) ───────────────────────────────────────────────

@@ -3,6 +3,8 @@
 import { useState } from 'react'
 import { DiscourseMarkerContent } from '@/types'
 import VoiceRecorder from '@/components/ui/VoiceRecorder'
+import FeedbackPanel, { FeedbackLoading, FeedbackError } from '@/components/ui/FeedbackPanel'
+import { useFeedback } from '@/lib/useFeedback'
 import { BookMarked } from 'lucide-react'
 
 interface Props {
@@ -14,6 +16,7 @@ interface Props {
 export default function DiscourseMarkerDrill({ content, onComplete }: Props) {
   const [answer, setAnswer] = useState('')
   const [saved, setSaved] = useState(false)
+  const { feedback, loading, error, getFeedback } = useFeedback()
 
   const saveAll = async () => {
     if (saved) return
@@ -31,10 +34,17 @@ export default function DiscourseMarkerDrill({ content, onComplete }: Props) {
     }
   }
 
+  const handleSubmit = () => {
+    getFeedback('discourse_marker_drill', {
+      markers: content.markers,
+      user_answer: answer,
+    })
+  }
+
   return (
     <div className="space-y-5">
       <div className="text-xs text-gray-500 bg-gray-50 rounded-lg px-3 py-2">
-        🎤 Speaking — 以下のマーカーを使いながら60秒間話してください
+        🎤 Speaking — 以下のマーカーから2つ以上を使いながら60秒間話してください
       </div>
 
       <div className="space-y-2">
@@ -59,17 +69,29 @@ export default function DiscourseMarkerDrill({ content, onComplete }: Props) {
         <p className="text-gray-800 font-medium">{content.topic}</p>
       </div>
 
-      <p className="text-sm text-gray-600">上のマーカーを全部使いながら、60秒間意見を話してください。完璧じゃなくてOK。</p>
+      {!feedback && !loading && (
+        <>
+          <p className="text-sm text-gray-600">上のマーカーから<strong>2つ以上</strong>使いながら、60秒間意見を話してください。完璧じゃなくてOK。</p>
+          <VoiceRecorder onTranscript={text => setAnswer(text)} />
+          {answer && (
+            <button
+              onClick={handleSubmit}
+              className="w-full py-3 bg-emerald-600 text-white rounded-xl font-medium hover:bg-emerald-700 transition-colors"
+            >
+              添削してもらう →
+            </button>
+          )}
+        </>
+      )}
 
-      <VoiceRecorder onTranscript={text => setAnswer(text)} />
-
-      {answer && (
-        <button
-          onClick={() => onComplete(answer)}
-          className="w-full py-3 bg-emerald-600 text-white rounded-xl font-medium hover:bg-emerald-700 transition-colors"
-        >
-          完了 →
-        </button>
+      {loading && <FeedbackLoading />}
+      {error && <FeedbackError error={error} onSkip={() => onComplete(answer)} />}
+      {feedback && (
+        <FeedbackPanel
+          feedback={feedback}
+          taskType="discourse_marker_drill"
+          onContinue={() => onComplete(answer)}
+        />
       )}
     </div>
   )

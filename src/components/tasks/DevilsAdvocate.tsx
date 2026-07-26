@@ -1,7 +1,11 @@
 'use client'
 
+import { useState } from 'react'
 import { DevilsAdvocateContent, ChatMessage } from '@/types'
 import ChatInterface from '@/components/ui/ChatInterface'
+import ConversationLog from '@/components/ui/ConversationLog'
+import FeedbackPanel, { FeedbackLoading, FeedbackError } from '@/components/ui/FeedbackPanel'
+import { useFeedback } from '@/lib/useFeedback'
 
 interface Props {
   taskId: string
@@ -10,11 +14,19 @@ interface Props {
 }
 
 export default function DevilsAdvocate({ content, onComplete }: Props) {
+  const [chatDone, setChatDone] = useState(false)
+  const [messages, setMessages] = useState<ChatMessage[]>([])
+  const [chatLog, setChatLog] = useState('')
+  const { feedback, loading, error, getFeedback } = useFeedback()
+
   const opening = `Interesting topic. Before I ask your view — I should warn you, I'm going to argue the opposite of whatever you say. So: ${content.user_prompt}`
 
-  const handleComplete = (messages: ChatMessage[]) => {
-    const log = messages.map(m => `[${m.role === 'user' ? 'You' : 'AI'}] ${m.content}`).join('\n')
-    onComplete(log)
+  const handleChatComplete = (msgs: ChatMessage[]) => {
+    const log = msgs.map(m => `[${m.role === 'user' ? 'You' : 'AI'}] ${m.content}`).join('\n')
+    setMessages(msgs)
+    setChatLog(log)
+    setChatDone(true)
+    getFeedback('devils_advocate', { topic: content.topic, chat_log: log })
   }
 
   return (
@@ -28,13 +40,29 @@ export default function DevilsAdvocate({ content, onComplete }: Props) {
         <p className="text-gray-800 leading-relaxed">"{content.topic}"</p>
       </div>
 
-      <ChatInterface
-        taskType="devils_advocate"
-        taskContent={content as unknown as Record<string, unknown>}
-        initialMessage={opening}
-        minExchanges={3}
-        onComplete={handleComplete}
-      />
+      {!chatDone && (
+        <ChatInterface
+          taskType="devils_advocate"
+          taskContent={content as unknown as Record<string, unknown>}
+          initialMessage={opening}
+          minExchanges={3}
+          onComplete={handleChatComplete}
+        />
+      )}
+
+      {chatDone && (
+        <ConversationLog messages={messages} />
+      )}
+
+      {chatDone && loading && <FeedbackLoading />}
+      {chatDone && error && <FeedbackError error={error} onSkip={() => onComplete(chatLog)} />}
+      {chatDone && feedback && (
+        <FeedbackPanel
+          feedback={feedback}
+          taskType="devils_advocate"
+          onContinue={() => onComplete(chatLog)}
+        />
+      )}
     </div>
   )
 }

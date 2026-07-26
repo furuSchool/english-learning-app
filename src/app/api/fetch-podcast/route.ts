@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server'
 import { GoogleGenerativeAI } from '@google/generative-ai'
 
-// BBC Global News Podcast — public RSS with direct mp3 enclosures
-const BBC_RSS = 'https://podcasts.files.bbci.co.uk/p02nq0gn.rss'
+// BBC 6 Minute English — ~6 min episodes, public RSS with direct mp3 enclosures
+const BBC_RSS = 'https://podcasts.files.bbci.co.uk/p02pc9zn.rss'
 
 interface PodcastEpisode {
   title: string
@@ -50,6 +50,7 @@ Questions should:
 
 Return ONLY a JSON array of 3 question strings. No markdown.`
 
+    console.log('\n[DEBUG /api/fetch-podcast] prompt:\n' + prompt)
     const result = await model.generateContent(prompt)
     const text = result.response.text().trim()
     const jsonStr = text.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '').trim()

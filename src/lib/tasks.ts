@@ -4,7 +4,8 @@ import { createClient } from '@/lib/supabase/client'
 const WARMUP_TYPES = ['rapid_fire_qa', 'shadowing_drill']
 const INPUT_TYPES = ['video_listening', 'tech_news_react', 'podcast_listening', 'quote_reaction']
 const INTERACTIVE_TYPES = ['ai_conversation', 'devils_advocate', 'information_gap', 'news_discussion']
-const EXPRESSION_TYPES = ['phrase_activation', 'collocation_builder', 'natural_expression', 'discourse_marker_drill', 'social_formula', 'impromptu_speak', 'situation_survival']
+const EXPRESSION_TYPES = ['phrase_activation', 'collocation_builder', 'natural_expression', 'discourse_marker_drill', 'social_formula']
+const OUTPUT_TYPES = ['impromptu_speak', 'situation_survival']
 
 function pick<T>(arr: T[]): T {
   return arr[Math.floor(Math.random() * arr.length)]
@@ -33,20 +34,22 @@ export async function buildSession(): Promise<SessionTaskSet> {
   const inputPool = byType(INPUT_TYPES)
   const interactivePool = byType(INTERACTIVE_TYPES)
   const expressionPool = byType(EXPRESSION_TYPES)
+  const outputPool = byType(OUTPUT_TYPES)
 
-  if (!warmupPool.length || !inputPool.length || interactivePool.length < 2 || !expressionPool.length) {
+  if (!warmupPool.length || !inputPool.length || !interactivePool.length || !expressionPool.length || !outputPool.length) {
     throw new Error('タスクが不足しています。ダッシュボードからタスクを生成してください。')
   }
 
   const warmup = pick(warmupPool)
   const input = pick(inputPool)
   const used = new Set([warmup.id, input.id])
-  const [interactive1, interactive2] = pickDistinct(interactivePool, 2, used)
-  used.add(interactive1.id)
-  used.add(interactive2.id)
+  const [interactive] = pickDistinct(interactivePool, 1, used)
+  used.add(interactive.id)
   const [expression] = pickDistinct(expressionPool, 1, used)
+  used.add(expression.id)
+  const [output] = pickDistinct(outputPool, 1, used)
 
-  return { warmup, input, interactive1, interactive2, expression }
+  return { warmup, input, interactive, expression, output }
 }
 
 export async function getTaskCount(): Promise<number> {

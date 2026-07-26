@@ -3,6 +3,8 @@
 import { useState } from 'react'
 import { QuoteReactionContent } from '@/types'
 import VoiceRecorder from '@/components/ui/VoiceRecorder'
+import FeedbackPanel, { FeedbackLoading, FeedbackError } from '@/components/ui/FeedbackPanel'
+import { useFeedback } from '@/lib/useFeedback'
 
 interface Props {
   taskId: string
@@ -12,6 +14,15 @@ interface Props {
 
 export default function QuoteReaction({ content, onComplete }: Props) {
   const [answer, setAnswer] = useState('')
+  const { feedback, loading, error, getFeedback } = useFeedback()
+
+  const handleSubmit = () => {
+    getFeedback('quote_reaction', {
+      quote: content.quote,
+      author: content.author,
+      user_answer: answer,
+    })
+  }
 
   return (
     <div className="space-y-5">
@@ -28,15 +39,28 @@ export default function QuoteReaction({ content, onComplete }: Props) {
         <p className="text-sm text-gray-700 leading-relaxed">{content.prompt}</p>
       </div>
 
-      <VoiceRecorder onTranscript={text => setAnswer(text)} />
+      {!feedback && !loading && (
+        <>
+          <VoiceRecorder onTranscript={text => setAnswer(text)} />
+          {answer && (
+            <button
+              onClick={handleSubmit}
+              className="w-full py-3 bg-emerald-600 text-white rounded-xl font-medium hover:bg-emerald-700 transition-colors"
+            >
+              添削してもらう →
+            </button>
+          )}
+        </>
+      )}
 
-      {answer && (
-        <button
-          onClick={() => onComplete(answer)}
-          className="w-full py-3 bg-emerald-600 text-white rounded-xl font-medium hover:bg-emerald-700 transition-colors"
-        >
-          完了 →
-        </button>
+      {loading && <FeedbackLoading />}
+      {error && <FeedbackError error={error} onSkip={() => onComplete(answer)} />}
+      {feedback && (
+        <FeedbackPanel
+          feedback={feedback}
+          taskType="quote_reaction"
+          onContinue={() => onComplete(answer)}
+        />
       )}
     </div>
   )
