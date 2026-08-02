@@ -8,19 +8,6 @@ interface PerTurnCorrection {
   corrections: { original: string; corrected: string; reason_ja: string }[]
 }
 
-// Short label describing the conversation's setting, so per-turn correction knows
-// a short/elliptical reply is a normal response in context, not a broken sentence.
-function taskContextSummary(taskContent: Record<string, unknown>): string {
-  const parts = [
-    taskContent.character && `talking with ${taskContent.character}${taskContent.character_description ? ` (${taskContent.character_description})` : ''}`,
-    taskContent.topic_hint && `about ${taskContent.topic_hint}`,
-    taskContent.topic && `debating: ${taskContent.topic}`,
-    taskContent.situation && `situation: ${taskContent.situation}`,
-    taskContent.scenario_description && `scenario: ${taskContent.scenario_description}`,
-  ].filter(Boolean)
-  return parts.join('; ')
-}
-
 interface ChatInterfaceProps {
   taskType: string
   taskContent: Record<string, unknown>
@@ -127,7 +114,6 @@ export default function ChatInterface({
           context: {
             user_message: userMessage,
             prior_ai_message: priorAiMessage,
-            task_context: taskContextSummary(taskContent),
           },
         }),
       })

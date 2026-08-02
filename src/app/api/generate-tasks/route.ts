@@ -28,13 +28,28 @@ const CATEGORY_MAP: Record<string, string> = {
   situation_survival: 'output',
 }
 
-// video_listening is excluded from AI generation — uses curated list only
-const BATCHES = [
-  ['rapid_fire_qa', 'shadowing_drill', 'quote_reaction'],
-  ['ai_conversation', 'devils_advocate', 'information_gap'],
-  ['phrase_activation', 'collocation_builder', 'natural_expression'],
-  ['discourse_marker_drill', 'social_formula', 'impromptu_speak', 'situation_survival'],
-]
+// Task types available for AI generation, grouped by session category.
+// video_listening is excluded — it comes from a curated list, no AI involved.
+const CATEGORY_TASK_TYPES: Record<string, string[]> = {
+  warmup: ['rapid_fire_qa', 'shadowing_drill'],
+  input: ['quote_reaction'],
+  interactive: ['ai_conversation', 'devils_advocate', 'information_gap'],
+  expression: ['phrase_activation', 'collocation_builder', 'natural_expression', 'discourse_marker_drill', 'social_formula'],
+  output: ['impromptu_speak', 'situation_survival'],
+}
+
+const GENERATION_ROUNDS = 10
+const CATEGORIES_PER_ROUND = 2
+const DELAY_BETWEEN_CALLS_MS = 500
+
+function pickOne<T>(arr: T[]): T {
+  return arr[Math.floor(Math.random() * arr.length)]
+}
+
+function pickDistinct<T>(arr: T[], n: number): T[] {
+  const shuffled = [...arr].sort(() => Math.random() - 0.5)
+  return shuffled.slice(0, n)
+}
 
 /** Generate 3 video_listening tasks from the curated list — no AI involved */
 function buildVideoTasks() {
@@ -63,13 +78,11 @@ function serializeError(e: unknown): string {
   try { return JSON.stringify(e) } catch { return 'Unknown error' }
 }
 
-async function generateBatch(
+async function generateOneTask(
   model: ReturnType<InstanceType<typeof GoogleGenerativeAI>['getGenerativeModel']>,
-  types: string[]
-): Promise<Array<{ type: string; category: string; content: unknown; difficulty: number }>> {
-  const prompt = buildGeneratePrompt(types)
-  console.log('\n[DEBUG /api/generate-tasks] types:', types)
-  console.log('[DEBUG /api/generate-tasks] prompt:\n' + prompt)
+  type: string
+): Promise<{ type: string; category: string; content: unknown; difficulty: number }> {
+  const prompt = buildGeneratePrompt(type)
   const result = await model.generateContent(prompt)
   const text = result.response.text().trim()
 
@@ -78,16 +91,14 @@ async function generateBatch(
     .replace(/\s*```$/m, '')
     .trim()
 
-  const tasks = JSON.parse(jsonStr) as Array<{
-    type: string; category?: string; content: unknown; difficulty?: number
-  }>
+  const parsed = JSON.parse(jsonStr) as { difficulty?: number; content: unknown }
 
-  return tasks.map(t => ({
-    type: t.type,
-    category: CATEGORY_MAP[t.type] ?? t.category ?? 'output',
-    content: t.content,
-    difficulty: t.difficulty ?? 1,
-  }))
+  return {
+    type,
+    category: CATEGORY_MAP[type],
+    content: parsed.content,
+    difficulty: parsed.difficulty ?? 1,
+  }
 }
 
 export async function POST(_request: NextRequest) {
@@ -109,30 +120,38 @@ export async function POST(_request: NextRequest) {
     totalAdded += videoTasks.length
   }
 
-  // 2. Generate all other tasks via Gemini
-  for (const batch of BATCHES) {
-    try {
-      const rows = await generateBatch(model, batch)
+  // 2. 10 rounds: each round randomly picks 2 of the 5 session categories, and
+  //    generates exactly 1 task (a random type within that category) for each —
+  //    one Gemini call per task, so topics stay varied and prompts stay small.
+  const categories = Object.keys(CATEGORY_TASK_TYPES)
 
-      const { error: insertError } = await supabase
-        .from('tasks')
-        .insert(rows.map(r => ({ ...r, active: true })))
+  for (let round = 0; round < GENERATION_ROUNDS; round++) {
+    const roundCategories = pickDistinct(categories, CATEGORIES_PER_ROUND)
 
-      if (insertError) {
-        errors.push(`Insert failed for [${batch.join(', ')}]: ${serializeError(insertError)}`)
-      } else {
-        totalAdded += rows.length
+    for (const category of roundCategories) {
+      const type = pickOne(CATEGORY_TASK_TYPES[category])
+      try {
+        const row = await generateOneTask(model, type)
+        const { error: insertError } = await supabase
+          .from('tasks')
+          .insert([{ ...row, active: true }])
+
+        if (insertError) {
+          errors.push(`Insert failed for [${type}]: ${serializeError(insertError)}`)
+        } else {
+          totalAdded += 1
+        }
+      } catch (e) {
+        errors.push(`Generation failed for [${type}]: ${serializeError(e)}`)
       }
-    } catch (e) {
-      errors.push(`Generation failed for [${batch.join(', ')}]: ${serializeError(e)}`)
-    }
 
-    await new Promise(r => setTimeout(r, 1000))
+      await new Promise(r => setTimeout(r, DELAY_BETWEEN_CALLS_MS))
+    }
   }
 
   if (totalAdded === 0) {
     return NextResponse.json(
-      { error: errors.join('\n') || 'すべてのバッチで生成に失敗しました' },
+      { error: errors.join('\n') || 'すべてのタスクで生成に失敗しました' },
       { status: 500 }
     )
   }

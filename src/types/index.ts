@@ -28,7 +28,6 @@ export interface RapidFireQAContent {
 export interface ShadowingDrillContent {
   text: string
   source_context: string
-  focus_point: string
 }
 
 export interface VideoListeningContent {

@@ -24,7 +24,6 @@ export const DEV_FIXTURES: Task[] = [
   makeTask('shadowing_drill', 'warmup', {
     text: "You know, I've been thinking about this a lot lately — and I mean, it's kind of hard to put into words, but I sort of feel like the way we work is changing faster than we're ready for. Like, not in a bad way, necessarily, but it does make you wonder where things are headed, you know?",
     source_context: "Casual conversation between two researchers at a coffee break",
-    focus_point: "Notice how 'kind of', 'sort of', and 'you know' are used as natural hedges and fillers — practice keeping the rhythm of these without pausing.",
   }),
 
   makeTask('video_listening', 'input', {

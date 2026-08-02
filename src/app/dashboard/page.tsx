@@ -137,7 +137,7 @@ export default function DashboardPage() {
             <span className="text-xs text-gray-400">Gemini AI が生成</span>
           </div>
           <p className="text-sm text-gray-500 mb-4">
-            14種類のタスクタイプについて各3問（計42問）をGeminiが自動生成します。
+            5つのカテゴリ（Warmup/Input/Interactive/Expression/Output）からランダムに2つずつ選び、1問ずつ生成することを10回繰り返します（AI生成20問＋動画3問、計23問）。
           </p>
           <button
             onClick={handleGenerate}
@@ -147,7 +147,7 @@ export default function DashboardPage() {
             {generating ? (
               <>
                 <RefreshCw className="w-4 h-4 animate-spin" />
-                生成中... (30秒ほどかかります)
+                生成中... (2〜3分ほどかかります)
               </>
             ) : (
               <>

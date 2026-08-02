@@ -29,6 +29,13 @@
 | Rapid-Fire Q&A 5問→3問 | 生成プロンプトの質問数を変更 |
 | Expression課題を2問以内に | Phrase Activation・Collocation Builderの生成個数を3→2に変更 |
 | プロンプト全文書き出し | `PROMPTS.md`に全プロンプトテンプレートの全文と使用場面を記載（手動編集の参照用。実体は`src/lib/prompts.ts`） |
+| Vercelデプロイが失敗する | `src/app/favicon.ico`がNext.jsの暗黙metadataルートを生成し、`--experimental-build-mode compile`下でVercelの`onBuildComplete`が`ENOTDIR`で落ちていた。`public/favicon.ico`へ移動して回避 |
+
+## タスク生成・プロンプト刷新（2026-08-02）
+
+- タスク生成をバッチ一括（4バッチで42問）から1タスク＝1Gemini呼び出しの逐次生成に変更。5カテゴリ（Warmup/Input/Interactive/Expression/Output）からランダムに2つを選び1問ずつ生成、を10回繰り返す（AI 20問＋動画3問＝計23問）
+- トピック多様性をプロンプト内の指示文からコード側のconst配列（`TOPIC_POOL`等、`src/lib/prompts.ts`）でのランダム選択に変更
+- 学習者プロファイルを`LEARNER_PROFILE`定数に統一、添削基準を`CORE_FEEDBACK_PRINCIPLE`として明文化。詳細は`/workspace/PROGRESS.md`参照
 
 ---
 
