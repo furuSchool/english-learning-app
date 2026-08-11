@@ -8,15 +8,10 @@ export interface FeedbackCorrection {
   reason_ja: string
 }
 
-export interface SaveablePhrase {
-  phrase: string
-  meaning_ja: string
-}
-
 export interface FeedbackData {
   corrected_text?: string
   corrections: FeedbackCorrection[]
-  saveable_phrases: SaveablePhrase[]
+  saveable_phrases: string[]
   overall_comment_ja: string
   ideal_answer?: string
 }

@@ -41,36 +41,50 @@ export default function FeedbackPanel({
   continueLabel = '完了 →',
 }: FeedbackPanelProps) {
   const [saved, setSaved] = useState<Set<string>>(new Set())
+  const [saveErrors, setSaveErrors] = useState<Set<string>>(new Set())
   const [customPhrase, setCustomPhrase] = useState('')
   const [customMeaning, setCustomMeaning] = useState('')
   const [registered, setRegistered] = useState<string[]>([])
   const [registering, setRegistering] = useState(false)
+  const [registerError, setRegisterError] = useState<string | null>(null)
 
   const handleSave = async (key: string, phrase: string, meaning: string) => {
     if (saved.has(key)) return
-    setSaved(prev => new Set([...prev, key]))
-    await fetch('/api/save-phrase', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ phrase, meaning_ja: meaning, task_type: taskType }),
-    }).catch(() => {})
+    try {
+      const res = await fetch('/api/save-phrase', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phrase, meaning_ja: meaning, task_type: taskType }),
+      })
+      if (!res.ok) throw new Error()
+      setSaved(prev => new Set([...prev, key]))
+      setSaveErrors(prev => {
+        const next = new Set(prev)
+        next.delete(key)
+        return next
+      })
+    } catch {
+      setSaveErrors(prev => new Set([...prev, key]))
+    }
   }
 
   const handleRegisterCustom = async () => {
     const phrase = customPhrase.trim()
     if (!phrase || registering) return
     setRegistering(true)
+    setRegisterError(null)
     try {
-      await fetch('/api/save-phrase', {
+      const res = await fetch('/api/save-phrase', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ phrase, meaning_ja: customMeaning.trim() || null, task_type: taskType }),
       })
+      if (!res.ok) throw new Error()
       setRegistered(prev => [...prev, phrase])
       setCustomPhrase('')
       setCustomMeaning('')
     } catch {
-      // ignore — user can retry
+      setRegisterError('登録に失敗しました。もう一度お試しください')
     } finally {
       setRegistering(false)
     }
@@ -121,22 +135,22 @@ export default function FeedbackPanel({
         <div className="space-y-2">
           <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">ストック候補</p>
           <ul className="space-y-2">
-            {feedback.saveable_phrases.map((sp, i) => {
+            {feedback.saveable_phrases.map((phrase, i) => {
               const key = `sp-${i}`
               return (
                 <li key={i} className="flex items-center justify-between bg-emerald-50 rounded-xl px-4 py-2.5 gap-3">
-                  <div className="flex-1 min-w-0">
-                    <p className="text-base text-emerald-800 italic">"{sp.phrase}"</p>
-                    {sp.meaning_ja && <p className="text-sm text-emerald-700 mt-0.5">{sp.meaning_ja}</p>}
+                  <p className="text-base text-emerald-800 italic flex-1">"{phrase}"</p>
+                  <div className="flex items-center gap-2 shrink-0">
+                    {saveErrors.has(key) && <span className="text-xs text-red-500">保存失敗</span>}
+                    <button
+                      onClick={() => handleSave(key, phrase, '')}
+                      disabled={saved.has(key)}
+                      title="フレーズをストック"
+                      className={`p-1.5 rounded-lg transition-colors ${saved.has(key) ? 'text-emerald-500' : 'text-gray-400 hover:text-indigo-600'}`}
+                    >
+                      {saved.has(key) ? <CheckCircle className="w-4 h-4" /> : <BookMarked className="w-4 h-4" />}
+                    </button>
                   </div>
-                  <button
-                    onClick={() => handleSave(key, sp.phrase, sp.meaning_ja)}
-                    disabled={saved.has(key)}
-                    title="フレーズをストック"
-                    className={`p-1.5 rounded-lg shrink-0 transition-colors ${saved.has(key) ? 'text-emerald-500' : 'text-gray-400 hover:text-indigo-600'}`}
-                  >
-                    {saved.has(key) ? <CheckCircle className="w-4 h-4" /> : <BookMarked className="w-4 h-4" />}
-                  </button>
                 </li>
               )
             })}
@@ -172,6 +186,7 @@ export default function FeedbackPanel({
             <Plus className="w-4 h-4" />
             登録する
           </button>
+          {registerError && <p className="text-xs text-red-500">{registerError}</p>}
           {registered.length > 0 && (
             <ul className="space-y-1 pt-1">
               {registered.map((p, i) => (
