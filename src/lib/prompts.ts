@@ -261,7 +261,7 @@ ${CORE_FEEDBACK_PRINCIPLE}
 Output fields:
 - corrections: Only expressions that would fail to convey meaning to a native listener. No fixed count — return as many as genuinely needed (often zero).
 - corrected_text: The learner's full input, with only those corrections marked inline as ~~wrong|right~~ (text after the closing ~~ is unmarked). Leave correct text unchanged; if nothing needs fixing, return the original as-is.
-- native_expressions: 2-3 natural, single-sentence alternatives in the same spoken register.
+- saveable_phrases: 2-3 natural, single-sentence alternatives in the same spoken register, each paired with a short Japanese meaning/note worth remembering.
 - overall_comment_ja: One short Japanese sentence — just a single actionable "次はこうしてみよう" tip. Nothing else.
 - ideal_answer: What a fluent speaker would naturally say to convey the same content as the learner's actual input. Match its length and scope naturally — no fixed sentence count.`
 
@@ -340,7 +340,7 @@ ${taskContext}
 Return ONLY valid JSON (no explanation, no markdown):
 {
   "corrections": [{ "original": "...", "corrected": "...", "reason_ja": "..." }],
-  "native_expressions": ["...", "..."],
+  "saveable_phrases": [{ "phrase": "...", "meaning_ja": "..." }],
   "overall_comment_ja": "...",
   "ideal_answer": "..."
 }`
@@ -354,7 +354,7 @@ Return ONLY valid JSON (no explanation, no markdown):
 {
   "corrected_text": "...",
   "corrections": [{ "original": "...", "corrected": "...", "reason_ja": "..." }],
-  "native_expressions": ["...", "..."],
+  "saveable_phrases": [{ "phrase": "...", "meaning_ja": "..." }],
   "overall_comment_ja": "...",
   "ideal_answer": "..."
 }`

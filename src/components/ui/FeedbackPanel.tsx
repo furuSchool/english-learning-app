@@ -116,18 +116,21 @@ export default function FeedbackPanel({
         </div>
       )}
 
-      {/* native expressions — each saveable individually */}
-      {feedback.native_expressions && feedback.native_expressions.length > 0 && (
+      {/* saveable_phrases — 2-3 AI-picked, each saveable individually */}
+      {feedback.saveable_phrases && feedback.saveable_phrases.length > 0 && (
         <div className="space-y-2">
-          <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">ネイティブ表現</p>
+          <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">ストック候補</p>
           <ul className="space-y-2">
-            {feedback.native_expressions.map((expr, i) => {
-              const key = `expr-${i}`
+            {feedback.saveable_phrases.map((sp, i) => {
+              const key = `sp-${i}`
               return (
                 <li key={i} className="flex items-center justify-between bg-emerald-50 rounded-xl px-4 py-2.5 gap-3">
-                  <p className="text-base text-emerald-800 italic flex-1">"{expr}"</p>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-base text-emerald-800 italic">"{sp.phrase}"</p>
+                    {sp.meaning_ja && <p className="text-sm text-emerald-700 mt-0.5">{sp.meaning_ja}</p>}
+                  </div>
                   <button
-                    onClick={() => handleSave(key, expr, '')}
+                    onClick={() => handleSave(key, sp.phrase, sp.meaning_ja)}
                     disabled={saved.has(key)}
                     title="フレーズをストック"
                     className={`p-1.5 rounded-lg shrink-0 transition-colors ${saved.has(key) ? 'text-emerald-500' : 'text-gray-400 hover:text-indigo-600'}`}
