@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { BookMarked, CheckCircle, AlertCircle, Loader2 } from 'lucide-react'
+import { BookMarked, CheckCircle, AlertCircle, Loader2, Plus } from 'lucide-react'
 import type { FeedbackData } from '@/lib/useFeedback'
 
 // Renders ~~wrong|correct~~ inline strikethrough diffs
@@ -41,6 +41,10 @@ export default function FeedbackPanel({
   continueLabel = '完了 →',
 }: FeedbackPanelProps) {
   const [saved, setSaved] = useState<Set<string>>(new Set())
+  const [customPhrase, setCustomPhrase] = useState('')
+  const [customMeaning, setCustomMeaning] = useState('')
+  const [registered, setRegistered] = useState<string[]>([])
+  const [registering, setRegistering] = useState(false)
 
   const handleSave = async (key: string, phrase: string, meaning: string) => {
     if (saved.has(key)) return
@@ -50,6 +54,26 @@ export default function FeedbackPanel({
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ phrase, meaning_ja: meaning, task_type: taskType }),
     }).catch(() => {})
+  }
+
+  const handleRegisterCustom = async () => {
+    const phrase = customPhrase.trim()
+    if (!phrase || registering) return
+    setRegistering(true)
+    try {
+      await fetch('/api/save-phrase', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phrase, meaning_ja: customMeaning.trim() || null, task_type: taskType }),
+      })
+      setRegistered(prev => [...prev, phrase])
+      setCustomPhrase('')
+      setCustomMeaning('')
+    } catch {
+      // ignore — user can retry
+    } finally {
+      setRegistering(false)
+    }
   }
 
   return (
@@ -117,33 +141,46 @@ export default function FeedbackPanel({
         </div>
       )}
 
-      {/* saveable_phrases */}
-      {feedback.saveable_phrases && feedback.saveable_phrases.length > 0 && (
-        <div className="space-y-2">
-          <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">ストック候補</p>
-          <ul className="space-y-2">
-            {feedback.saveable_phrases.map((sp, i) => {
-              const key = `sp-${i}`
-              return (
-                <li key={i} className="flex items-center justify-between bg-white border border-gray-200 rounded-xl px-4 py-2.5 gap-3">
-                  <div className="flex-1 min-w-0">
-                    <p className="text-base font-medium text-gray-800">"{sp.phrase}"</p>
-                    {sp.meaning_ja && <p className="text-sm text-gray-500">{sp.meaning_ja}</p>}
-                  </div>
-                  <button
-                    onClick={() => handleSave(key, sp.phrase, sp.meaning_ja)}
-                    disabled={saved.has(key)}
-                    title="フレーズをストック"
-                    className={`p-1.5 rounded-lg shrink-0 transition-colors ${saved.has(key) ? 'text-emerald-500' : 'text-gray-400 hover:text-indigo-600'}`}
-                  >
-                    {saved.has(key) ? <CheckCircle className="w-4 h-4" /> : <BookMarked className="w-4 h-4" />}
-                  </button>
+      {/* custom phrase registration — repeatable free-text entry */}
+      <div className="space-y-2">
+        <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">フレーズを登録</p>
+        <div className="bg-white border border-gray-200 rounded-xl p-3 space-y-2">
+          <input
+            type="text"
+            value={customPhrase}
+            onChange={e => setCustomPhrase(e.target.value)}
+            onKeyDown={e => { if (e.key === 'Enter') handleRegisterCustom() }}
+            placeholder="覚えたい単語・フレーズを入力"
+            className="w-full text-base px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-400"
+          />
+          <input
+            type="text"
+            value={customMeaning}
+            onChange={e => setCustomMeaning(e.target.value)}
+            onKeyDown={e => { if (e.key === 'Enter') handleRegisterCustom() }}
+            placeholder="意味・メモ（任意）"
+            className="w-full text-sm px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-400"
+          />
+          <button
+            onClick={handleRegisterCustom}
+            disabled={!customPhrase.trim() || registering}
+            className="w-full flex items-center justify-center gap-1.5 py-2 bg-indigo-50 text-indigo-700 rounded-lg font-medium text-sm hover:bg-indigo-100 disabled:opacity-50 transition-colors"
+          >
+            <Plus className="w-4 h-4" />
+            登録する
+          </button>
+          {registered.length > 0 && (
+            <ul className="space-y-1 pt-1">
+              {registered.map((p, i) => (
+                <li key={i} className="flex items-center gap-1.5 text-sm text-emerald-700">
+                  <CheckCircle className="w-3.5 h-3.5 shrink-0" />
+                  &quot;{p}&quot;
                 </li>
-              )
-            })}
-          </ul>
+              ))}
+            </ul>
+          )}
         </div>
-      )}
+      </div>
 
       {/* ideal_answer */}
       {feedback.ideal_answer && (
