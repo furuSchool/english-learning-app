@@ -321,7 +321,7 @@ Previous line: "${priorAiMessage}"
 Learner's reply: "${userMessage}"
 
 Return ONLY valid JSON (no explanation, no markdown):
-{ "corrections": [{ "original": "...", "corrected": "...", "reason_ja": "..." }] }`
+{ "corrections": [{ "original": "...", "corrected": "..." }] }`
 }
 
 export function buildFeedbackPrompt(taskType: string, context: Record<string, unknown>): string {

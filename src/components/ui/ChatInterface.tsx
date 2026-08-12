@@ -5,7 +5,7 @@ import { ChatMessage } from '@/types'
 import { Send, Mic, Square, AlertCircle, Loader2 } from 'lucide-react'
 
 interface PerTurnCorrection {
-  corrections: { original: string; corrected: string; reason_ja: string }[]
+  corrections: { original: string; corrected: string }[]
 }
 
 interface ChatInterfaceProps {
@@ -206,7 +206,6 @@ export default function ChatInterface({
                         <span className="line-through text-red-400">{c.original}</span>
                         <span className="text-gray-400 mx-1">→</span>
                         <span className="text-emerald-700 font-medium">{c.corrected}</span>
-                        {c.reason_ja && <span className="text-gray-400 ml-1">({c.reason_ja})</span>}
                       </div>
                     ))}
                   </div>
