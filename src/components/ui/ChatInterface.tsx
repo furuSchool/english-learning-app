@@ -3,12 +3,14 @@
 import { useState, useRef, useEffect } from 'react'
 import { ChatMessage } from '@/types'
 import { Send, Mic, Square, AlertCircle, Loader2 } from 'lucide-react'
+import { consumeTask } from '@/lib/consumeTask'
 
 interface PerTurnCorrection {
   corrections: { original: string; corrected: string }[]
 }
 
 interface ChatInterfaceProps {
+  taskId: string
   taskType: string
   taskContent: Record<string, unknown>
   initialMessage: string
@@ -17,6 +19,7 @@ interface ChatInterfaceProps {
 }
 
 export default function ChatInterface({
+  taskId,
   taskType,
   taskContent,
   initialMessage,
@@ -131,6 +134,8 @@ export default function ChatInterface({
     const text = input.trim()
     if (!text || loading) return
     if (isRecording) { isRecordingRef.current = false; setIsRecording(false); recognitionRef.current?.stop() }
+
+    if (userTurns === 0) consumeTask(taskId)
 
     const userMsgIndex = messages.length
     const priorAiMessage = messages[messages.length - 1]?.content ?? initialMessage

@@ -12,7 +12,7 @@ interface Props {
   onComplete: (transcript: string) => void
 }
 
-export default function ImpromtuSpeak({ content, onComplete }: Props) {
+export default function ImpromtuSpeak({ taskId, content, onComplete }: Props) {
   const [started, setStarted] = useState(false)
   const [seconds, setSeconds] = useState(0)
   const [answer, setAnswer] = useState('')
@@ -33,7 +33,7 @@ export default function ImpromtuSpeak({ content, onComplete }: Props) {
     getFeedback('impromptu_speak', {
       topic: content.topic,
       user_answer: answer,
-    })
+    }, taskId)
   }
 
   return (

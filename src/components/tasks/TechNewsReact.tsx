@@ -17,7 +17,7 @@ interface NewsData {
   source_url: string
 }
 
-export default function TechNewsReact({ onComplete }: Props) {
+export default function TechNewsReact({ taskId, onComplete }: Props) {
   const [news, setNews] = useState<NewsData | null>(null)
   const [fetchLoading, setFetchLoading] = useState(true)
   const [read, setRead] = useState(false)
@@ -47,7 +47,7 @@ export default function TechNewsReact({ onComplete }: Props) {
     getFeedback('tech_news_react', {
       news_summary: news.summary,
       user_answer: answer,
-    })
+    }, taskId)
   }
 
   return (

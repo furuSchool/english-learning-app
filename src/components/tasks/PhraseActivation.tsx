@@ -13,7 +13,7 @@ interface Props {
   onComplete: (transcript: string) => void
 }
 
-export default function PhraseActivation({ content, onComplete }: Props) {
+export default function PhraseActivation({ taskId, content, onComplete }: Props) {
   const [index, setIndex] = useState(0)
   const [answers, setAnswers] = useState<string[]>([])
   const [current, setCurrent] = useState('')
@@ -41,7 +41,7 @@ export default function PhraseActivation({ content, onComplete }: Props) {
     getFeedback('phrase_activation', {
       phrase: phrase.phrase,
       user_sentence: current,
-    })
+    }, taskId)
   }
 
   const handleNext = () => {

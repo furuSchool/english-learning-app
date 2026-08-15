@@ -13,7 +13,7 @@ interface Props {
   onComplete: (transcript: string) => void
 }
 
-export default function SocialFormula({ content, onComplete }: Props) {
+export default function SocialFormula({ taskId, content, onComplete }: Props) {
   const [answer, setAnswer] = useState('')
   const [saved, setSaved] = useState(false)
   const { feedback, loading, error, getFeedback } = useFeedback()
@@ -39,7 +39,7 @@ export default function SocialFormula({ content, onComplete }: Props) {
       formula_focus: content.formula_focus,
       scenario: content.scenario,
       user_answer: answer,
-    })
+    }, taskId)
   }
 
   return (

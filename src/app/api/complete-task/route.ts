@@ -30,7 +30,10 @@ export async function POST(request: NextRequest) {
       supabase.rpc('increment_activity', { p_date: today }),
     ]
 
-    // Used tasks are removed from the pool (not soft-deleted) — see requirements §8.1
+    // Primary removal happens earlier, via /api/consume-task, as soon as the learner
+    // submits the first part of the task (see requirements §8.1). This is a defensive
+    // fallback for the "skip every part" path, where consume-task is never called —
+    // idempotent, since the row is usually already gone by the time we get here.
     if (taskId) {
       pending.push(createAdminClient().from('tasks').delete().eq('id', taskId))
     }

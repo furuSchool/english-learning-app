@@ -16,7 +16,8 @@ const LEARNER_PROFILE = `Learner profile:
 - Goal: "Rough but effective" communication. Conveying the core message matters more than grammatical accuracy or speed.`
 
 const CORE_FEEDBACK_PRINCIPLE = `Input is speech-to-text from spoken English — expect disfluencies, filler words, repeated words, and fragment-like phrasing; never flag these.
-Only flag expressions where the meaning would fail to reach a native listener — not awkwardness, not minor grammar. If nothing rises to that bar, return an empty list.`
+Ignore isolated word-level slips (wrong/misheard word, typo — e.g. "flexable" for "fixable") if the sentence still reads clearly despite them.
+Only flag expressions where the meaning would still fail to reach a native listener after mentally correcting such slips — not awkwardness, not minor grammar. If nothing rises to that bar, return an empty list.`
 
 // ── Topic / context pools (§2.2 of the requirements doc) ────────────────────
 // Picked randomly at generation time and embedded into the prompt so diversity
@@ -259,11 +260,11 @@ ${LEARNER_PROFILE}
 ${CORE_FEEDBACK_PRINCIPLE}
 
 Output fields:
-- corrections: Only expressions that would fail to convey meaning to a native listener. No fixed count — return as many as genuinely needed (often zero).
+- corrections: Only expressions that would fail to convey meaning to a native listener. No fixed count — return as many as genuinely needed (often zero). reason_ja: ONE short Japanese sentence — what English word order/phrasing is natural here. Terse, no extra commentary.
 - corrected_text: The learner's full input, with only those corrections marked inline as ~~wrong|right~~ (text after the closing ~~ is unmarked). Leave correct text unchanged; if nothing needs fixing, return the original as-is.
-- saveable_phrases: 2-3 natural, single-sentence alternatives in the same spoken register.
-- overall_comment_ja: One short Japanese sentence — just a single actionable "次はこうしてみよう" tip. Nothing else.
-- ideal_answer: What a fluent speaker would naturally say to convey the same content as the learner's actual input. Match its length and scope naturally — no fixed sentence count.`
+- saveable_phrases: 2-3 short phrases or idioms worth memorizing (NOT full sentences), in the same spoken register.
+- overall_comment_ja: ONE short Japanese sentence judging whether the answer is natural/appropriate for the question — say plainly if the nuance is off or fine. Not a generic tip.
+- ideal_answer: What a fluent speaker would casually SAY out loud here — simple and conversational, the way people actually talk, not a polished written sentence. Match length/scope to the learner's input.`
 
 function taskSpecificFeedbackContext(taskType: string, ctx: Record<string, unknown>): string {
   switch (taskType) {

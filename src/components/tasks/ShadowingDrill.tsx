@@ -12,7 +12,7 @@ interface Props {
   onComplete: (transcript: string) => void
 }
 
-export default function ShadowingDrill({ content, onComplete }: Props) {
+export default function ShadowingDrill({ taskId, content, onComplete }: Props) {
   const [phase, setPhase] = useState<'read' | 'shadow' | 'paraphrase'>('read')
   const [paraphrase, setParaphrase] = useState('')
   const { feedback, loading, error, getFeedback } = useFeedback()
@@ -21,7 +21,7 @@ export default function ShadowingDrill({ content, onComplete }: Props) {
     getFeedback('shadowing_drill', {
       original_text: content.text,
       user_paraphrase: paraphrase,
-    })
+    }, taskId)
   }
 
   return (

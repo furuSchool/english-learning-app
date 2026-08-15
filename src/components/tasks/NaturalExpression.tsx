@@ -13,7 +13,7 @@ interface Props {
   onComplete: (transcript: string) => void
 }
 
-export default function NaturalExpression({ content, onComplete }: Props) {
+export default function NaturalExpression({ taskId, content, onComplete }: Props) {
   const [answer, setAnswer] = useState('')
   const [saved, setSaved] = useState<number | null>(null)
   const { feedback, loading, error, getFeedback } = useFeedback()
@@ -37,7 +37,7 @@ export default function NaturalExpression({ content, onComplete }: Props) {
     getFeedback('natural_expression', {
       japanese_expression: content.japanese,
       user_answer: answer,
-    })
+    }, taskId)
   }
 
   return (

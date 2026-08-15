@@ -234,6 +234,118 @@ export const CURATED_VIDEOS: CuratedVideo[] = [
     question:
       'In your own words, what does "optimistic nihilism" mean? Do you find this philosophy comforting, unsettling, or somewhere in between? How do you personally create meaning in your own life?',
   },
+
+  // ── Additional verified TED talks (round 2) ─────────────────────────────
+  {
+    youtube_id: 'H14bBuluwB8',
+    title: 'Grit: The Power of Passion and Perseverance',
+    speaker: 'Angela Lee Duckworth',
+    channel: 'TED',
+    topic_tags: ['psychology', 'perseverance', 'success', 'education'],
+    summary_en:
+      'Psychologist Angela Lee Duckworth argues that "grit" — sustained passion and perseverance toward long-term goals — predicts success better than talent or IQ, based on research spanning West Point cadets, spelling-bee contestants, and teachers.',
+    question:
+      'What does Angela Duckworth mean by "grit," and how does she say it differs from talent? Can you think of a goal you stuck with through difficulty — or gave up on too early? Explain.',
+  },
+  {
+    youtube_id: 'VO6XEQIsCoM',
+    title: 'The Paradox of Choice',
+    speaker: 'Barry Schwartz',
+    channel: 'TED',
+    topic_tags: ['psychology', 'decision-making', 'consumer culture', 'happiness'],
+    summary_en:
+      "Barry Schwartz argues that today's overwhelming abundance of choices, far from making us freer, produces paralysis and less satisfaction, since more options raise expectations and increase regret.",
+    question:
+      "What is Barry Schwartz's \"paradox of choice\"? Have you ever felt overwhelmed or less satisfied because you had too many options? Describe what happened.",
+  },
+  {
+    youtube_id: '4q1dgn_C0AU',
+    title: 'The Surprising Science of Happiness',
+    speaker: 'Dan Gilbert',
+    channel: 'TED',
+    topic_tags: ['psychology', 'happiness', 'decision-making', 'perception'],
+    summary_en:
+      'Dan Gilbert presents research on our "psychological immune system" — the unconscious process that lets people manufacture genuine happiness even after losing a competition, a limb, or a relationship.',
+    question:
+      'What does Dan Gilbert mean by our "psychological immune system"? Can you recall a time something didn\'t go your way but you ended up okay with it anyway? What happened?',
+  },
+  {
+    youtube_id: 'P_6vDLq64gE',
+    title: 'How to Spot a Liar',
+    speaker: 'Pamela Meyer',
+    channel: 'TED',
+    topic_tags: ['psychology', 'communication', 'deception', 'behavior'],
+    summary_en:
+      'Deception expert Pamela Meyer explains that the average person is lied to many times a day, and outlines verbal and nonverbal cues — like distancing language and inconsistent gestures — that can reveal dishonesty.',
+    question:
+      'What is one technique Pamela Meyer describes for spotting a liar? Do you think you\'re good at telling when someone is lying to you? Give an example if you can.',
+  },
+  {
+    youtube_id: 'R1vskiVDwl4',
+    title: '10 Ways to Have a Better Conversation',
+    speaker: 'Celeste Headlee',
+    channel: 'TED',
+    topic_tags: ['communication', 'listening', 'relationships', 'habits'],
+    summary_en:
+      'Radio host Celeste Headlee shares ten practical rules for better conversations — including being present and avoiding repeating yourself — arguing that genuine listening is the single most important skill.',
+    question:
+      "Which one of Celeste Headlee's conversation rules do you think you break the most? Why do you think that habit is hard to change?",
+  },
+  {
+    youtube_id: 'V74AxCqOTvg',
+    title: 'How to Start a Movement',
+    speaker: 'Derek Sivers',
+    channel: 'TED',
+    topic_tags: ['leadership', 'social dynamics', 'group behavior'],
+    summary_en:
+      'Using video of a lone dancer at an outdoor festival, Derek Sivers argues that the first follower — not the initial leader — is what actually transforms a solo act into a movement.',
+    question:
+      'According to Derek Sivers, why is the "first follower" more important than the original leader in starting a movement? Have you ever been a first follower — the one who joined in before it was popular to do so?',
+  },
+  {
+    youtube_id: 'KM4Xe6Dlp0Y',
+    title: "Looks Aren't Everything. Believe Me, I'm a Model.",
+    speaker: 'Cameron Russell',
+    channel: 'TED',
+    topic_tags: ['appearance', 'identity', 'media', 'society'],
+    summary_en:
+      'Fashion model Cameron Russell candidly examines the role of genetics and social construction in her career, questioning why society gives so much power to physical appearance.',
+    question:
+      'What does Cameron Russell say determined her success as a model, and how does she feel about that? Do you think appearance matters too much in your own field or culture? Why or why not?',
+  },
+  {
+    youtube_id: '4sZdcB6bjI8',
+    title: "Why Some of Us Don't Have One True Calling",
+    speaker: 'Emilie Wapnick',
+    channel: 'TED',
+    topic_tags: ['career', 'identity', 'creativity', 'self-discovery'],
+    summary_en:
+      'Career coach Emilie Wapnick introduces the idea of the "multipotentialite" — someone with many interests and creative pursuits rather than one true calling — and argues this is a real strength.',
+    question:
+      'What is a "multipotentialite" according to Emilie Wapnick? Do you relate more to having one clear passion, or many different interests? Explain with an example.',
+  },
+  {
+    youtube_id: '3c8ajL5o2U8',
+    title: '3 Things I Learned While My Plane Crashed',
+    speaker: 'Ric Elias',
+    channel: 'TED',
+    topic_tags: ['life', 'perspective', 'priorities', 'mortality'],
+    summary_en:
+      'Ric Elias, a passenger on the 2009 US Airways flight that crash-landed in the Hudson River, shares the three things that became instantly clear to him as he thought he was about to die.',
+    question:
+      'What are the three things Ric Elias says he learned while he thought his plane was crashing? If you believed you had very little time left, what would become most important to you?',
+  },
+  {
+    youtube_id: 'UNP03fDSj1U',
+    title: 'Try Something New for 30 Days',
+    speaker: 'Matt Cutts',
+    channel: 'TED',
+    topic_tags: ['habits', 'self-improvement', 'productivity', 'goals'],
+    summary_en:
+      'Google engineer Matt Cutts describes how adopting month-long personal challenges — like writing a novel or biking to work — changed his habits and confidence more than trying to change forever all at once.',
+    question:
+      "What is Matt Cutts' \"30-day challenge\" idea, and what examples does he give? If you tried a 30-day challenge starting tomorrow, what would you pick and why?",
+  },
 ]
 
 /** Pick a random video, optionally excluding already-used IDs */

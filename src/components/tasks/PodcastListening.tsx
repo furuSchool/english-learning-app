@@ -17,7 +17,7 @@ interface PodcastData {
   questions: string[]
 }
 
-export default function PodcastListening({ onComplete }: Props) {
+export default function PodcastListening({ taskId, onComplete }: Props) {
   const [pod, setPod] = useState<PodcastData | null>(null)
   const [fetchLoading, setFetchLoading] = useState(true)
   const [listened, setListened] = useState(false)
@@ -46,7 +46,7 @@ export default function PodcastListening({ onComplete }: Props) {
   const submitAnswer = () => {
     const q = pod.questions[qIndex]
     setLog(prev => [...prev, `Q: ${q}\nA: ${currentAnswer}`])
-    getFeedback('podcast_listening', { question: q, user_answer: currentAnswer })
+    getFeedback('podcast_listening', { question: q, user_answer: currentAnswer }, taskId)
   }
 
   const nextQuestion = () => {

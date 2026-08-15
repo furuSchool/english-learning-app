@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { consumeTask } from '@/lib/consumeTask'
 
 export interface FeedbackCorrection {
   original: string
@@ -21,7 +22,8 @@ export function useFeedback() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const getFeedback = async (taskType: string, context: Record<string, unknown>) => {
+  const getFeedback = async (taskType: string, context: Record<string, unknown>, taskId?: string) => {
+    if (taskId) consumeTask(taskId)
     setLoading(true)
     setError(null)
     try {

@@ -12,7 +12,7 @@ interface Props {
   onComplete: (transcript: string) => void
 }
 
-export default function QuoteReaction({ content, onComplete }: Props) {
+export default function QuoteReaction({ taskId, content, onComplete }: Props) {
   const [answer, setAnswer] = useState('')
   const { feedback, loading, error, getFeedback } = useFeedback()
 
@@ -21,7 +21,7 @@ export default function QuoteReaction({ content, onComplete }: Props) {
       quote: content.quote,
       author: content.author,
       user_answer: answer,
-    })
+    }, taskId)
   }
 
   return (

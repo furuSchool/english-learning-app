@@ -13,7 +13,7 @@ interface Props {
   onComplete: (transcript: string) => void
 }
 
-export default function InformationGap({ content, onComplete }: Props) {
+export default function InformationGap({ taskId, content, onComplete }: Props) {
   const [chatDone, setChatDone] = useState(false)
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [chatLog, setChatLog] = useState('')
@@ -41,6 +41,7 @@ export default function InformationGap({ content, onComplete }: Props) {
 
       {!chatDone && (
         <ChatInterface
+          taskId={taskId}
           taskType="information_gap"
           taskContent={content as unknown as Record<string, unknown>}
           initialMessage="I know what's going on. Ask me questions and I'll tell you what I can."

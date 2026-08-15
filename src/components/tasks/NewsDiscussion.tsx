@@ -18,7 +18,7 @@ interface NewsData {
   source_url?: string
 }
 
-export default function NewsDiscussion({ onComplete }: Props) {
+export default function NewsDiscussion({ taskId, onComplete }: Props) {
   const [news, setNews] = useState<NewsData | null>(null)
   const [fetchLoading, setFetchLoading] = useState(true)
   const [chatStarted, setChatStarted] = useState(false)
@@ -84,6 +84,7 @@ export default function NewsDiscussion({ onComplete }: Props) {
 
       {chatStarted && !chatDone && (
         <ChatInterface
+          taskId={taskId}
           taskType="news_discussion"
           taskContent={news as unknown as Record<string, unknown>}
           initialMessage={opening}

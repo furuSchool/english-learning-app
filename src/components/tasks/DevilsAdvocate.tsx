@@ -13,7 +13,7 @@ interface Props {
   onComplete: (transcript: string) => void
 }
 
-export default function DevilsAdvocate({ content, onComplete }: Props) {
+export default function DevilsAdvocate({ taskId, content, onComplete }: Props) {
   const [chatDone, setChatDone] = useState(false)
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [chatLog, setChatLog] = useState('')
@@ -42,6 +42,7 @@ export default function DevilsAdvocate({ content, onComplete }: Props) {
 
       {!chatDone && (
         <ChatInterface
+          taskId={taskId}
           taskType="devils_advocate"
           taskContent={content as unknown as Record<string, unknown>}
           initialMessage={opening}

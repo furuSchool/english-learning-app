@@ -12,7 +12,7 @@ interface Props {
   onComplete: (transcript: string) => void
 }
 
-export default function RapidFireQA({ content, onComplete }: Props) {
+export default function RapidFireQA({ taskId, content, onComplete }: Props) {
   const [index, setIndex] = useState(0)
   const [currentAnswer, setCurrentAnswer] = useState('')
   const [allAnswers, setAllAnswers] = useState<string[]>([])
@@ -26,7 +26,7 @@ export default function RapidFireQA({ content, onComplete }: Props) {
     getFeedback('rapid_fire_qa', {
       questions: [question],
       user_answers: [currentAnswer.trim() || '(no answer)'],
-    })
+    }, taskId)
   }
 
   const handleNext = () => {

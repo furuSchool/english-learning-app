@@ -13,7 +13,7 @@ interface Props {
   onComplete: (transcript: string) => void
 }
 
-export default function VideoListening({ content, onComplete }: Props) {
+export default function VideoListening({ taskId, content, onComplete }: Props) {
   const [watched, setWatched] = useState(false)
   const [answer, setAnswer] = useState('')
   const { feedback, loading, error, getFeedback } = useFeedback()
@@ -26,7 +26,7 @@ export default function VideoListening({ content, onComplete }: Props) {
       video_title: content.title,
       question: content.question,
       user_answer: answer,
-    })
+    }, taskId)
   }
 
   return (

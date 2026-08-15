@@ -13,7 +13,7 @@ interface Props {
   onComplete: (transcript: string) => void
 }
 
-export default function SituationSurvival({ content, onComplete }: Props) {
+export default function SituationSurvival({ taskId, content, onComplete }: Props) {
   const [started, setStarted] = useState(false)
   const [chatDone, setChatDone] = useState(false)
   const [messages, setMessages] = useState<ChatMessage[]>([])
@@ -51,6 +51,7 @@ export default function SituationSurvival({ content, onComplete }: Props) {
 
       {started && !chatDone && (
         <ChatInterface
+          taskId={taskId}
           taskType="situation_survival"
           taskContent={{
             character: 'Person in the scenario',

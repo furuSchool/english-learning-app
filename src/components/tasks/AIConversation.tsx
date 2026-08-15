@@ -13,7 +13,7 @@ interface Props {
   onComplete: (transcript: string) => void
 }
 
-export default function AIConversation({ content, onComplete }: Props) {
+export default function AIConversation({ taskId, content, onComplete }: Props) {
   const [chatDone, setChatDone] = useState(false)
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [chatLog, setChatLog] = useState('')
@@ -45,6 +45,7 @@ export default function AIConversation({ content, onComplete }: Props) {
 
       {!chatDone && (
         <ChatInterface
+          taskId={taskId}
           taskType="ai_conversation"
           taskContent={content as unknown as Record<string, unknown>}
           initialMessage={content.opening_line}

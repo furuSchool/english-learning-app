@@ -13,7 +13,7 @@ interface Props {
   onComplete: (transcript: string) => void
 }
 
-export default function DiscourseMarkerDrill({ content, onComplete }: Props) {
+export default function DiscourseMarkerDrill({ taskId, content, onComplete }: Props) {
   const [answer, setAnswer] = useState('')
   const [saved, setSaved] = useState(false)
   const { feedback, loading, error, getFeedback } = useFeedback()
@@ -38,7 +38,7 @@ export default function DiscourseMarkerDrill({ content, onComplete }: Props) {
     getFeedback('discourse_marker_drill', {
       markers: content.markers,
       user_answer: answer,
-    })
+    }, taskId)
   }
 
   return (
