@@ -263,8 +263,8 @@ Output fields:
 - corrections: Only expressions that would fail to convey meaning to a native listener. No fixed count — return as many as genuinely needed (often zero). reason_ja: ONE short Japanese sentence — what English word order/phrasing is natural here. Terse, no extra commentary.
 - corrected_text: The learner's full input, with only those corrections marked inline as ~~wrong|right~~ (text after the closing ~~ is unmarked). Leave correct text unchanged; if nothing needs fixing, return the original as-is.
 - saveable_phrases: 2-3 short phrases or idioms worth memorizing (NOT full sentences), in the same spoken register.
-- overall_comment_ja: ONE short Japanese sentence judging whether the answer is natural/appropriate for the question — say plainly if the nuance is off or fine. Not a generic tip.
-- ideal_answer: A natural, casual spoken-style answer to the actual question/prompt above (not a paraphrase of the learner's input) — simple and conversational, the way people actually talk, not a polished written sentence. Similar length to the learner's input.`
+- overall_comment_ja: ONE short Japanese sentence comparing the learner's original answer to ideal_answer below — plainly point out the content/nuance gap if one exists, or confirm they're aligned if not. Judge the learner's own answer, not whether the question itself is valid.
+- ideal_answer: The learner's own answer, kept as the same content/point, rephrased the way a native speaker would naturally say it in response to the question — not a different or generic answer that ignores what the learner actually said. Simple, casual, spoken-style, not a polished written sentence. Similar length to the learner's input.`
 
 function taskSpecificFeedbackContext(taskType: string, ctx: Record<string, unknown>): string {
   switch (taskType) {
