@@ -37,6 +37,7 @@ export default function DiscourseMarkerDrill({ taskId, content, onComplete }: Pr
   const handleSubmit = () => {
     getFeedback('discourse_marker_drill', {
       markers: content.markers,
+      topic: content.topic,
       user_answer: answer,
     }, taskId)
   }

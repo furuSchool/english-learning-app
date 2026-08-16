@@ -20,6 +20,7 @@ export default function QuoteReaction({ taskId, content, onComplete }: Props) {
     getFeedback('quote_reaction', {
       quote: content.quote,
       author: content.author,
+      discussion_prompt: content.prompt,
       user_answer: answer,
     }, taskId)
   }

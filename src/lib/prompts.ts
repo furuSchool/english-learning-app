@@ -264,7 +264,7 @@ Output fields:
 - corrected_text: The learner's full input, with only those corrections marked inline as ~~wrong|right~~ (text after the closing ~~ is unmarked). Leave correct text unchanged; if nothing needs fixing, return the original as-is.
 - saveable_phrases: 2-3 short phrases or idioms worth memorizing (NOT full sentences), in the same spoken register.
 - overall_comment_ja: ONE short Japanese sentence judging whether the answer is natural/appropriate for the question — say plainly if the nuance is off or fine. Not a generic tip.
-- ideal_answer: What a fluent speaker would casually SAY out loud here — simple and conversational, the way people actually talk, not a polished written sentence. Match length/scope to the learner's input.`
+- ideal_answer: A natural, casual spoken-style answer to the actual question/prompt above (not a paraphrase of the learner's input) — simple and conversational, the way people actually talk, not a polished written sentence. Similar length to the learner's input.`
 
 function taskSpecificFeedbackContext(taskType: string, ctx: Record<string, unknown>): string {
   switch (taskType) {
@@ -279,11 +279,11 @@ function taskSpecificFeedbackContext(taskType: string, ctx: Record<string, unkno
     case 'video_listening':
       return `Question: "${ctx.question}"\nAnswer: "${ctx.user_answer}"`
     case 'tech_news_react':
-      return `News: "${ctx.news_summary}"\nResponse: "${ctx.user_answer}"`
+      return `News: "${ctx.news_summary}"\nQuestion: "${ctx.question}"\nResponse: "${ctx.user_answer}"`
     case 'podcast_listening':
       return `Question: "${ctx.question}"\nAnswer: "${ctx.user_answer}"`
     case 'quote_reaction':
-      return `Quote: "${ctx.quote}"\nResponse: "${ctx.user_answer}"`
+      return `Quote: "${ctx.quote}"\nPrompt: "${ctx.discussion_prompt}"\nResponse: "${ctx.user_answer}"`
     case 'phrase_activation':
       return `Phrase: "${ctx.phrase}"\nSentence: "${ctx.user_sentence}"`
     case 'collocation_builder':
@@ -292,7 +292,7 @@ function taskSpecificFeedbackContext(taskType: string, ctx: Record<string, unkno
       return `Japanese: "${ctx.japanese_expression}"\nAnswer: "${ctx.user_answer}"`
     case 'discourse_marker_drill': {
       const markers = (ctx.markers as string[]) ?? []
-      return `Markers: ${markers.map(m => `"${m}"`).join(', ')}\nSpeech: "${ctx.user_answer}"`
+      return `Topic: "${ctx.topic}"\nMarkers: ${markers.map(m => `"${m}"`).join(', ')}\nSpeech: "${ctx.user_answer}"`
     }
     case 'social_formula':
       return `Skill: "${ctx.formula_focus}"\nScenario: "${ctx.scenario}"\nResponse: "${ctx.user_answer}"`

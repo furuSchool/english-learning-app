@@ -43,9 +43,12 @@ export default function TechNewsReact({ taskId, onComplete }: Props) {
     <p className="text-sm text-red-500">ニュースの取得に失敗しました。</p>
   )
 
+  const question = "What's the key point of this story? What do you think about it?"
+
   const handleSubmit = () => {
     getFeedback('tech_news_react', {
       news_summary: news.summary,
+      question,
       user_answer: answer,
     }, taskId)
   }
@@ -81,7 +84,7 @@ export default function TechNewsReact({ taskId, onComplete }: Props) {
       {read && !feedback && !fbLoading && (
         <div className="space-y-3">
           <div className="bg-indigo-50 rounded-xl p-4">
-            <p className="text-sm text-gray-800">What's the key point of this story? What do you think about it? (60 seconds)</p>
+            <p className="text-sm text-gray-800">{question} (60 seconds)</p>
           </div>
           <VoiceRecorder onTranscript={text => setAnswer(text)} />
           {answer && (
